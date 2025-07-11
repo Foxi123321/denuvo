@@ -297,10 +297,11 @@ body {
 
 /* AI Chat */
 .ai-chat-container {
-    flex: 1;
+    flex: 2;
     display: flex;
     flex-direction: column;
     border-bottom: 1px solid #3e3e42;
+    min-height: 400px;
 }
 
 .chat-header {
@@ -330,9 +331,31 @@ body {
     flex: 1;
     padding: 16px;
     overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
     gap: 12px;
+    max-height: calc(100vh - 400px);
+    min-height: 300px;
+    scroll-behavior: smooth;
+}
+
+.chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: #2d2d30;
+    border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #777;
 }
 
 .user-message, .ai-message {
@@ -350,8 +373,12 @@ body {
     color: white;
     padding: 8px 12px;
     border-radius: 12px;
-    max-width: 80%;
+    max-width: 85%;
     word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    line-height: 1.4;
 }
 
 .ai-message .message-content {
@@ -359,13 +386,25 @@ body {
     color: #d4d4d4;
     padding: 8px 12px;
     border-radius: 12px;
-    max-width: 80%;
+    max-width: 85%;
     word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    line-height: 1.4;
 }
 
 .ai-message i {
     color: #007acc;
     margin-top: 8px;
+}
+
+.message-timestamp {
+    font-size: 10px;
+    opacity: 0.6;
+    margin-top: 4px;
+    text-align: right;
+    font-family: monospace;
 }
 
 .chat-input-container {
@@ -398,7 +437,9 @@ body {
 
 /* Build Output */
 .build-output {
-    height: 200px;
+    flex: 1;
+    min-height: 150px;
+    max-height: 250px;
     display: flex;
     flex-direction: column;
 }

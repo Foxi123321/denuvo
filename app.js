@@ -571,14 +571,41 @@ h1 {
         const messageDiv = document.createElement('div');
         messageDiv.className = sender === 'User' ? 'user-message' : 'ai-message';
         
+        // Add timestamp for better UX
+        const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         const icon = sender === 'User' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
         messageDiv.innerHTML = `
             ${icon}
-            <div class="message-content">${this.formatMessage(message)}</div>
+            <div class="message-content">
+                ${this.formatMessage(message)}
+                <div class="message-timestamp">${timestamp}</div>
+            </div>
         `;
         
+        // Add fade-in animation
+        messageDiv.style.opacity = '0';
+        messageDiv.style.transform = 'translateY(10px)';
         chatMessages.appendChild(messageDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // Animate in
+        setTimeout(() => {
+            messageDiv.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            messageDiv.style.opacity = '1';
+            messageDiv.style.transform = 'translateY(0)';
+        }, 50);
+        
+        // Auto-scroll to bottom, but preserve user's scroll position if they've scrolled up
+        const isScrolledToBottom = chatMessages.scrollTop + chatMessages.clientHeight >= chatMessages.scrollHeight - 50;
+        
+        if (isScrolledToBottom || sender === 'User') {
+            // Smooth scroll to bottom with a slight delay to ensure rendering
+            setTimeout(() => {
+                chatMessages.scrollTo({
+                    top: chatMessages.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }, 100);
+        }
     }
 
     formatMessage(message) {
