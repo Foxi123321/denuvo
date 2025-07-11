@@ -58,6 +58,23 @@
                     <i class="fas fa-vial"></i> Generate Tests
                 </button>
             </div>
+            
+            <!-- AI Tools Settings -->
+            <div class="ai-tools-settings">
+                <h4><i class="fas fa-cogs"></i> AI Tools</h4>
+                <label class="tool-setting">
+                    <input type="checkbox" id="autoCreateFiles" checked onchange="toggleAITool('autoSaveGeneratedFiles', this.checked)">
+                    <span>Auto-create files</span>
+                </label>
+                <label class="tool-setting">
+                    <input type="checkbox" id="extractCode" checked onchange="toggleAITool('extractCode', this.checked)">
+                    <span>Extract code blocks</span>
+                </label>
+                <label class="tool-setting">
+                    <input type="checkbox" id="suggestNames" checked onchange="toggleAITool('suggestFileNames', this.checked)">
+                    <span>Smart file naming</span>
+                </label>
+            </div>
         </div>
 
         <!-- Editor Area -->
@@ -109,7 +126,7 @@
                 <div class="chat-messages" id="chatMessages">
                     <div class="ai-message">
                         <i class="fas fa-robot"></i>
-                        <div>🚀 Welcome to FreeAI IDE!<br><br>I'm your AI coding assistant powered by puter.js with unlimited free AI assistance!<br><br>📝 <strong>First time?</strong> Just ask me anything - you'll be prompted to sign in to puter.com automatically (no API keys needed!)</div>
+                        <div>🚀 Welcome to FreeAI IDE!<br><br>I'm your AI coding assistant powered by puter.js with unlimited free AI assistance!<br><br>📝 <strong>First time?</strong> Just ask me anything - you'll be prompted to sign in to puter.com automatically (no API keys needed!)<br><br>🛠️ <strong>NEW: AI Tools!</strong> I can automatically create files from code I generate. Try: "Create a Python snake game"</div>
                     </div>
                 </div>
                 <div class="chat-input-container">

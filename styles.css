@@ -167,6 +167,38 @@ body {
     margin-right: 8px;
 }
 
+/* AI Tools Settings */
+.ai-tools-settings {
+    border-top: 1px solid #3e3e42;
+    padding: 12px;
+    margin-top: 12px;
+}
+
+.ai-tools-settings h4 {
+    font-size: 12px;
+    color: #cccccc;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.tool-setting {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: #cccccc;
+    cursor: pointer;
+}
+
+.tool-setting input[type="checkbox"] {
+    margin-right: 8px;
+    accent-color: #007acc;
+}
+
+.tool-setting:hover {
+    color: #007acc;
+}
+
 /* Editor Container */
 .editor-container {
     flex: 1;
@@ -405,6 +437,52 @@ body {
     margin-top: 4px;
     text-align: right;
     font-family: monospace;
+}
+
+/* AI Tools - Code Actions */
+.code-actions {
+    margin-top: 8px;
+    padding: 8px;
+    background: rgba(0, 122, 204, 0.1);
+    border: 1px solid rgba(0, 122, 204, 0.3);
+    border-radius: 6px;
+}
+
+.code-actions small {
+    display: block;
+    color: #007acc;
+    font-weight: bold;
+    margin-bottom: 6px;
+    font-size: 11px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.code-action-btn {
+    background: #007acc;
+    border: none;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 10px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.code-action-btn:hover {
+    background: #005a9e;
+    transform: translateY(-1px);
+}
+
+.code-action-btn i {
+    font-size: 9px;
 }
 
 .chat-input-container {

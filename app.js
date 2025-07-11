@@ -8,6 +8,13 @@ class FreeAIIDE {
         this.tabs = [];
         this.currentModel = 'claude-sonnet-4';
         this.terminalHistory = [];
+        this.aiTools = {
+            createFile: true,
+            extractCode: true,
+            autoDetectLanguage: true,
+            suggestFileNames: true,
+            autoSaveGeneratedFiles: true
+        };
         this.buildConfigs = {
             react: {
                 build: 'npm run build',
@@ -56,6 +63,7 @@ class FreeAIIDE {
             console.log('Puter.js loaded successfully!');
             this.addChatMessage('AI', 'Welcome to FreeAI IDE! 🚀 I\'m your AI coding assistant powered by puter.js.');
             this.addChatMessage('AI', '✨ <strong>How it works:</strong><br>• No API keys needed!<br>• When you first use AI features, you\'ll be prompted to sign in to puter.com<br>• After that, enjoy unlimited free AI assistance!<br>• Try asking me anything or press Ctrl+K for inline help');
+            this.addChatMessage('AI', '🛠️ <strong>NEW: AI Tools!</strong><br>• I can automatically create files from code I generate<br>• Smart file naming based on code content<br>• Extract only code parts (like qodo-ai/pr-agent)<br>• Toggle these features in the sidebar<br>• Try: "Create a Python snake game"');
             
             // Test connection with a simple ping (but don't show errors to user)
             try {
@@ -540,11 +548,8 @@ h1 {
         this.addChatMessage('User', message);
         input.value = '';
 
-        // Add context about current file
-        let contextualPrompt = message;
-        if (this.currentFile && this.editor.getValue()) {
-            contextualPrompt = `Current file: ${this.currentFile}\n\nCode:\n${this.editor.getValue()}\n\nQuestion: ${message}`;
-        }
+        // Enhanced AI context with file information and AI tools capabilities
+        let contextualPrompt = this.buildEnhancedPrompt(message);
 
         try {
             this.showLoading(true);
@@ -566,6 +571,38 @@ h1 {
         }
     }
 
+    buildEnhancedPrompt(userMessage) {
+        let prompt = '';
+        
+        // Add AI tools context
+        prompt += `You are an AI coding assistant in FreeAI IDE with special file creation capabilities. When you provide code:
+- Wrap code in proper markdown code blocks with language tags (e.g., \`\`\`python, \`\`\`javascript, etc.)
+- I can automatically create files from your code blocks
+- Suggest appropriate filenames when providing complete files
+- For substantial code (>5 lines), I'll auto-create files if enabled
+
+`;
+
+        // Add current project context
+        if (this.files.size > 0) {
+            prompt += `Current project files:\n`;
+            Array.from(this.files.keys()).forEach(filename => {
+                prompt += `- ${filename}\n`;
+            });
+            prompt += '\n';
+        }
+
+        // Add current file context
+        if (this.currentFile && this.editor.getValue()) {
+            prompt += `Currently editing: ${this.currentFile}\n\nCurrent code:\n${this.editor.getValue()}\n\n`;
+        }
+
+        // Add user's actual question
+        prompt += `User request: ${userMessage}`;
+
+        return prompt;
+    }
+
     addChatMessage(sender, message) {
         const chatMessages = document.getElementById('chatMessages');
         const messageDiv = document.createElement('div');
@@ -574,10 +611,16 @@ h1 {
         // Add timestamp for better UX
         const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         const icon = sender === 'User' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
+        
+        // Check for code blocks and add AI tools if it's an AI message
+        const codeBlocks = this.extractCodeBlocks(message);
+        const hasCode = codeBlocks.length > 0;
+        
         messageDiv.innerHTML = `
             ${icon}
             <div class="message-content">
                 ${this.formatMessage(message)}
+                ${hasCode && sender === 'AI' ? this.createCodeActionButtons(codeBlocks) : ''}
                 <div class="message-timestamp">${timestamp}</div>
             </div>
         `;
@@ -606,6 +649,11 @@ h1 {
                 });
             }, 100);
         }
+
+        // Auto-create files if enabled and code is detected
+        if (hasCode && sender === 'AI' && this.aiTools.autoSaveGeneratedFiles) {
+            setTimeout(() => this.autoCreateFiles(codeBlocks), 1000);
+        }
     }
 
     formatMessage(message) {
@@ -616,6 +664,196 @@ h1 {
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
             .replace(/\n/g, '<br>');
+    }
+
+    // AI Tools - Code Extraction and File Creation
+    extractCodeBlocks(message) {
+        const codeBlocks = [];
+        
+        // Extract code blocks with language hints
+        const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
+        let match;
+        
+        while ((match = codeBlockRegex.exec(message)) !== null) {
+            const language = match[1] || 'text';
+            const code = match[2].trim();
+            
+            if (code) {
+                codeBlocks.push({
+                    language: language,
+                    code: code,
+                    suggestedFileName: this.suggestFileName(code, language)
+                });
+            }
+        }
+        
+        // Also check for single-line code that looks like complete files
+        if (codeBlocks.length === 0) {
+            const lines = message.split('\n');
+            const codeLines = lines.filter(line => 
+                line.trim() && 
+                (line.includes('def ') || line.includes('function ') || 
+                 line.includes('class ') || line.includes('import ') ||
+                 line.includes('<!DOCTYPE') || line.includes('<html'))
+            );
+            
+            if (codeLines.length > 3) {
+                const code = lines.join('\n');
+                const language = this.detectLanguage(code);
+                codeBlocks.push({
+                    language: language,
+                    code: code,
+                    suggestedFileName: this.suggestFileName(code, language)
+                });
+            }
+        }
+        
+        return codeBlocks;
+    }
+
+    suggestFileName(code, language) {
+        // Extract function/class names for better file naming
+        let baseName = 'untitled';
+        
+        // Python
+        if (language === 'python' || language === 'py') {
+            const classMatch = code.match(/class\s+(\w+)/);
+            const funcMatch = code.match(/def\s+(\w+)/);
+            if (classMatch) baseName = classMatch[1].toLowerCase();
+            else if (funcMatch) baseName = funcMatch[1];
+            return `${baseName}.py`;
+        }
+        
+        // JavaScript
+        if (language === 'javascript' || language === 'js') {
+            const funcMatch = code.match(/function\s+(\w+)|const\s+(\w+)\s*=|let\s+(\w+)\s*=/);
+            const classMatch = code.match(/class\s+(\w+)/);
+            if (classMatch) baseName = classMatch[1].toLowerCase();
+            else if (funcMatch) baseName = funcMatch[1] || funcMatch[2] || funcMatch[3];
+            return `${baseName}.js`;
+        }
+        
+        // HTML
+        if (language === 'html') {
+            const titleMatch = code.match(/<title>(.*?)<\/title>/i);
+            if (titleMatch) baseName = titleMatch[1].toLowerCase().replace(/\s+/g, '_');
+            return `${baseName}.html`;
+        }
+        
+        // CSS
+        if (language === 'css') {
+            return 'styles.css';
+        }
+        
+        // Java
+        if (language === 'java') {
+            const classMatch = code.match(/public\s+class\s+(\w+)/);
+            if (classMatch) baseName = classMatch[1];
+            return `${baseName}.java`;
+        }
+        
+        // Default extensions
+        const extensions = {
+            'cpp': 'cpp', 'c': 'c', 'json': 'json', 'xml': 'xml',
+            'yaml': 'yml', 'sql': 'sql', 'bash': 'sh', 'shell': 'sh'
+        };
+        
+        return `${baseName}.${extensions[language] || language || 'txt'}`;
+    }
+
+    detectLanguage(code) {
+        // Simple language detection based on patterns
+        if (code.includes('def ') && code.includes('import ')) return 'python';
+        if (code.includes('function ') || code.includes('const ') || code.includes('=>')) return 'javascript';
+        if (code.includes('<!DOCTYPE') || code.includes('<html')) return 'html';
+        if (code.includes('public class') && code.includes('{')) return 'java';
+        if (code.includes('#include') && code.includes('int main')) return 'cpp';
+        if (code.includes('body {') || code.includes('@media')) return 'css';
+        return 'text';
+    }
+
+    createCodeActionButtons(codeBlocks) {
+        const buttons = codeBlocks.map((block, index) => {
+            const fileName = block.suggestedFileName;
+            const codeId = `code_${Date.now()}_${index}`;
+            
+            // Store code in a temporary variable to avoid escaping issues
+            window[codeId] = block.code;
+            
+            return `
+                <div class="code-actions">
+                    <small>📄 Detected: ${block.language} code (${block.code.split('\n').length} lines)</small>
+                    <div class="action-buttons">
+                        <button class="code-action-btn" onclick="ide.createFileFromCode(${index}, '${fileName}', window['${codeId}'])">
+                            <i class="fas fa-file-plus"></i> Create ${fileName}
+                        </button>
+                        <button class="code-action-btn" onclick="ide.insertCodeIntoEditor(window['${codeId}'])">
+                            <i class="fas fa-edit"></i> Insert into Editor
+                        </button>
+                        <button class="code-action-btn" onclick="ide.copyCodeToClipboard(window['${codeId}'])">
+                            <i class="fas fa-copy"></i> Copy Code
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        return buttons;
+    }
+
+    async autoCreateFiles(codeBlocks) {
+        if (!this.aiTools.autoSaveGeneratedFiles) return;
+        
+        for (const block of codeBlocks) {
+            // Only auto-create for substantial code blocks
+            if (block.code.split('\n').length > 5) {
+                const fileName = block.suggestedFileName;
+                
+                // Check if file already exists
+                if (!this.files.has(fileName)) {
+                    this.createFileFromCode(0, fileName, block.code, true);
+                    this.addToOutput(`🤖 Auto-created: ${fileName}`, 'success');
+                }
+            }
+        }
+    }
+
+    createFileFromCode(index, fileName, code, silent = false) {
+        // Clean the code (remove extra whitespace, etc.)
+        const cleanCode = code.trim();
+        
+        // Create the file
+        this.files.set(fileName, {
+            content: cleanCode,
+            modified: true,
+            language: this.getLanguageFromExtension(fileName)
+        });
+        
+        this.updateFileTree();
+        
+        if (!silent) {
+            this.openFileInEditor(fileName);
+            this.addChatMessage('System', `✅ Created file: ${fileName}`);
+            this.addToOutput(`Created file: ${fileName}`, 'success');
+        }
+    }
+
+    insertCodeIntoEditor(code) {
+        if (this.editor) {
+            const cursor = this.editor.getCursor();
+            this.editor.replaceRange(code, cursor);
+            this.addChatMessage('System', '✅ Code inserted into editor');
+        }
+    }
+
+    async copyCodeToClipboard(code) {
+        try {
+            await navigator.clipboard.writeText(code);
+            this.addChatMessage('System', '✅ Code copied to clipboard');
+        } catch (error) {
+            console.error('Failed to copy to clipboard:', error);
+            this.addChatMessage('System', '❌ Failed to copy to clipboard');
+        }
     }
 
     // Terminal System
@@ -1177,6 +1415,16 @@ window.testAIConnection = async () => {
     } finally {
         ide.showLoading(false);
     }
+};
+
+window.toggleAITool = (toolName, enabled) => {
+    ide.aiTools[toolName] = enabled;
+    const toolNames = {
+        'autoSaveGeneratedFiles': 'Auto-create files',
+        'extractCode': 'Extract code blocks', 
+        'suggestFileNames': 'Smart file naming'
+    };
+    ide.addChatMessage('System', `🔧 ${toolNames[toolName]} ${enabled ? 'enabled' : 'disabled'}`);
 };
 
 // Initialize IDE when page loads
