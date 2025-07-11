@@ -617,14 +617,17 @@ h1 {
         const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         const icon = sender === 'User' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
         
-        // Check for code blocks and add AI tools if it's an AI message
+        // Extract code blocks BEFORE formatting message
         const codeBlocks = this.extractCodeBlocks(message);
         const hasCode = codeBlocks.length > 0;
+        
+        // Format message with code blocks properly handled
+        const formattedMessage = this.formatMessageWithCodeBlocks(message, codeBlocks);
         
         messageDiv.innerHTML = `
             ${icon}
             <div class="message-content">
-                ${this.formatMessage(message)}
+                ${formattedMessage}
                 ${hasCode && sender === 'AI' ? this.createCodeActionButtons(codeBlocks) : ''}
                 <div class="message-timestamp">${timestamp}</div>
             </div>
@@ -662,12 +665,11 @@ h1 {
     }
 
     formatMessage(message) {
-        // Basic markdown support
+        // Basic markdown support - but preserve code blocks for action buttons
         return message
-            .replace(/```(.*?)```/gs, '<pre><code>$1</code></pre>')
-            .replace(/`([^`]+)`/g, '<code>$1</code>')
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
             .replace(/\n/g, '<br>');
     }
 
