@@ -6,7 +6,7 @@ class FreeAIIDE {
         this.files = new Map();
         this.projectStructure = {};
         this.tabs = [];
-        this.currentModel = 'gpt-4o';
+        this.currentModel = 'claude-sonnet-4';
         this.terminalHistory = [];
         this.buildConfigs = {
             react: {
@@ -129,7 +129,17 @@ class FreeAIIDE {
         // Model selector
         document.getElementById('aiModel').addEventListener('change', (e) => {
             this.currentModel = e.target.value;
-            this.addChatMessage('System', `Switched to ${e.target.value} model`);
+            const modelNames = {
+                'claude-sonnet-4': 'Claude Sonnet 4 🧠',
+                'claude-opus-4': 'Claude Opus 4 🎯', 
+                'gpt-4o': 'GPT-4o ⚡',
+                'claude-3-5-sonnet': 'Claude 3.5 Sonnet 📝',
+                'gpt-4.1': 'GPT-4.1 🚀',
+                'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo': 'Llama 3.1 🦙',
+                'deepseek-chat': 'DeepSeek Chat 🔍'
+            };
+            const modelName = modelNames[e.target.value] || e.target.value;
+            this.addChatMessage('System', `🔄 Switched to ${modelName}`);
         });
 
         // Keyboard shortcuts
@@ -426,13 +436,13 @@ h1 {
         }
     }
 
-    async callAI(prompt, useStream = false) {
+    async callAI(prompt, useStream = false, retryCount = 0) {
         if (typeof puter === 'undefined') {
             throw new Error('Puter.js not available. Please refresh the page.');
         }
 
         try {
-            console.log(`Making AI request with model: ${this.currentModel}`, { prompt: prompt.substring(0, 100) + '...' });
+            console.log(`Making AI request with model: ${this.currentModel} (attempt ${retryCount + 1})`, { prompt: prompt.substring(0, 100) + '...' });
 
             if (useStream) {
                 const response = await puter.ai.chat(prompt, {
@@ -483,15 +493,41 @@ h1 {
             console.error('AI API Error:', error);
             
             // Handle specific puter.js errors
-            if (error.message?.includes('auth') || error.message?.includes('sign')) {
+            if (error.message?.includes('auth') || error.message?.includes('sign') || error.message?.includes('login')) {
                 throw new Error('Please sign in to puter.com to use AI features. The sign-in dialog should appear automatically.');
-            } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+            } else if (error.message?.includes('network') || error.message?.includes('fetch') || error.message?.includes('connection')) {
                 throw new Error('Network error. Please check your internet connection.');
             } else if (error.message?.includes('rate') || error.message?.includes('limit')) {
                 throw new Error('Rate limit reached. Please wait a moment and try again.');
+            } else if (error.message?.includes('model') || error.message?.includes('unsupported')) {
+                throw new Error(`Model ${this.currentModel} may not be available. Try switching to a different AI model.`);
+            } else if (error.message?.includes('timeout')) {
+                throw new Error('Request timeout. The AI model may be busy. Please try again.');
+            } else if (error.status === 401 || error.status === 403) {
+                throw new Error('Authentication error. Please sign in to puter.com.');
+            } else if (error.status === 429) {
+                throw new Error('Too many requests. Please wait a moment before trying again.');
+            } else if (error.status === 500) {
+                throw new Error('Server error. The AI service may be temporarily unavailable.');
             }
             
-            throw new Error(`AI request failed: ${error.message || 'Unknown error'}`);
+            // Retry logic for temporary errors
+            if (retryCount < 2 && (
+                error.message?.includes('timeout') || 
+                error.message?.includes('network') || 
+                error.status === 500 || 
+                error.status === 502 || 
+                error.status === 503
+            )) {
+                console.log(`Retrying AI request in 2 seconds... (attempt ${retryCount + 2})`);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                return this.callAI(prompt, useStream, retryCount + 1);
+            }
+
+            // More detailed error message
+            const errorMsg = error.message || error.toString() || 'Unknown error';
+            const statusMsg = error.status ? ` (Status: ${error.status})` : '';
+            throw new Error(`AI request failed: ${errorMsg}${statusMsg}. Try switching AI models or check your connection.`);
         }
     }
 
@@ -1095,8 +1131,21 @@ window.testAIConnection = async () => {
         console.error('AI connection test failed:', error);
         if (error.message.includes('sign in') || error.message.includes('auth')) {
             ide.addChatMessage('System', '🔐 Please sign in to puter.com to use AI features. The sign-in dialog should appear automatically.');
+        } else if (error.message.includes('model') || error.message.includes('unsupported')) {
+            ide.addChatMessage('System', `⚠️ ${ide.currentModel} may not be available. Trying GPT-4o instead...`);
+            try {
+                const oldModel = ide.currentModel;
+                ide.currentModel = 'gpt-4o';
+                document.getElementById('aiModel').value = 'gpt-4o';
+                const response = await ide.callAI('Hello! Please respond with "AI connection successful with GPT-4o!"');
+                ide.addChatMessage('AI', response);
+                ide.addChatMessage('System', `✅ Switched to GPT-4o successfully! (${oldModel} was not available)`);
+            } catch (fallbackError) {
+                ide.addChatMessage('System', `❌ Both ${ide.currentModel} and GPT-4o failed. Please try a different model.`);
+            }
         } else {
             ide.addChatMessage('System', `❌ AI connection test failed: ${error.message}`);
+            ide.addChatMessage('System', '💡 Try: 1) Switching AI models 2) Refreshing the page 3) Checking your internet connection');
         }
     } finally {
         ide.showLoading(false);

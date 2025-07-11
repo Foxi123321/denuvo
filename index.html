@@ -93,10 +93,13 @@
                     <h3><i class="fas fa-comments"></i> AI Assistant</h3>
                     <div class="model-selector">
                         <select id="aiModel">
+                            <option value="claude-sonnet-4" selected>Claude Sonnet 4</option>
+                            <option value="claude-opus-4">Claude Opus 4</option>
                             <option value="gpt-4o">GPT-4o</option>
                             <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
-                            <option value="meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo">Llama 3.1</option>
                             <option value="gpt-4.1">GPT-4.1</option>
+                            <option value="meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo">Llama 3.1</option>
+                            <option value="deepseek-chat">DeepSeek Chat</option>
                         </select>
                         <button class="btn-icon" onclick="testAIConnection()" title="Test AI Connection" style="margin-left: 8px;">
                             <i class="fas fa-plug"></i>
