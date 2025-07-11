@@ -9,10 +9,65 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+    
+    <!-- Debug styles to ensure something shows -->
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background: #1e1e1e;
+            color: #cccccc;
+        }
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1e1e1e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #333;
+            border-top: 5px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error-message {
+            background: #dc3545;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px;
+            max-width: 600px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
 </head>
 <body>
-    <div id="app">
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loading-screen">
+        <div class="loading-spinner"></div>
+        <p style="margin-top: 20px;">Loading CrazyIDE...</p>
+        <p style="font-size: 12px; opacity: 0.7;">If this takes too long, check the console for errors</p>
+    </div>
+
+    <!-- Error Display -->
+    <div id="error-display" style="display: none;"></div>
+
+    <div id="app" style="display: none;">
         <!-- Top Menu Bar -->
         <div class="menu-bar">
             <div class="menu-left">
@@ -325,14 +380,165 @@
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="js/editor.js"></script>
-    <script src="js/file-system.js"></script>
-    <script src="js/terminal.js"></script>
-    <script src="js/git.js"></script>
-    <script src="js/themes.js"></script>
-    <script src="js/extensions.js"></script>
-    <script src="js/ai-assistant.js"></script>
-    <script src="js/app.js"></script>
+    <!-- Scripts with error handling -->
+    <script>
+        console.log('🚀 Starting CrazyIDE...');
+        
+        // Global error handler
+        window.addEventListener('error', function(e) {
+            console.error('CrazyIDE Error:', e.error);
+            showError('JavaScript Error: ' + e.message + '\nFile: ' + e.filename + '\nLine: ' + e.lineno);
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Unhandled Promise Rejection:', e.reason);
+            showError('Promise Rejection: ' + e.reason);
+        });
+
+        function showError(message) {
+            const errorDisplay = document.getElementById('error-display');
+            const loadingScreen = document.getElementById('loading-screen');
+            
+            errorDisplay.innerHTML = '<div class="error-message">❌ CrazyIDE Error:\n\n' + message + '\n\nPlease check the browser console (F12) for more details.</div>';
+            errorDisplay.style.display = 'block';
+            
+            if (loadingScreen) {
+                loadingScreen.style.display = 'none';
+            }
+        }
+
+        function hideLoading() {
+            const loadingScreen = document.getElementById('loading-screen');
+            const app = document.getElementById('app');
+            
+            if (loadingScreen) {
+                loadingScreen.style.display = 'none';
+            }
+            if (app) {
+                app.style.display = 'flex';
+            }
+        }
+
+        // Basic functionality without external dependencies
+        function initBasicIDE() {
+            console.log('📝 Initializing basic IDE...');
+            
+            // Hide loading and show app
+            hideLoading();
+            
+            // Basic theme toggle
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', function() {
+                    const body = document.body;
+                    const isDark = body.getAttribute('data-theme') === 'dark';
+                    body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+                    
+                    const icon = themeToggle.querySelector('i');
+                    icon.className = isDark ? 'fas fa-moon' : 'fas fa-sun';
+                });
+            }
+            
+            // Basic file creation
+            document.querySelectorAll('[data-action="new-file"]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const fileName = prompt('Enter file name:') || 'untitled.txt';
+                    const welcomeScreen = document.getElementById('welcome-screen');
+                    if (welcomeScreen) {
+                        welcomeScreen.innerHTML = `
+                            <div style="padding: 40px; text-align: center;">
+                                <h2>📝 ${fileName}</h2>
+                                <p>File created! Full Monaco editor will load with external scripts.</p>
+                                <textarea style="width: 100%; height: 300px; background: #2d2d30; color: #cccccc; border: 1px solid #3e3e42; padding: 16px; font-family: 'JetBrains Mono', monospace;" placeholder="Start typing your code here..."></textarea>
+                            </div>
+                        `;
+                    }
+                });
+            });
+            
+            console.log('✅ Basic IDE initialized successfully!');
+        }
+
+        // Try to load external dependencies, fall back to basic mode
+        function loadFullIDE() {
+            console.log('🔄 Loading full IDE with external dependencies...');
+            
+            try {
+                // Load Monaco Editor
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js';
+                script.onload = function() {
+                    console.log('📦 Monaco loader loaded, initializing full IDE...');
+                    loadIDEModules();
+                };
+                script.onerror = function() {
+                    console.warn('⚠️ Monaco failed to load, using basic mode');
+                    initBasicIDE();
+                };
+                document.head.appendChild(script);
+            } catch (error) {
+                console.error('Error loading full IDE:', error);
+                initBasicIDE();
+            }
+        }
+
+        function loadIDEModules() {
+            try {
+                // Load our modules in sequence
+                const modules = [
+                    'js/themes.js',
+                    'js/file-system.js', 
+                    'js/terminal.js',
+                    'js/git.js',
+                    'js/extensions.js',
+                    'js/ai-assistant.js',
+                    'js/app.js'
+                ];
+                
+                let loadedModules = 0;
+                
+                modules.forEach((module, index) => {
+                    const script = document.createElement('script');
+                    script.src = module;
+                    script.onload = function() {
+                        loadedModules++;
+                        console.log(`✅ Loaded ${module} (${loadedModules}/${modules.length})`);
+                        
+                        if (loadedModules === modules.length) {
+                            console.log('🎉 All modules loaded successfully!');
+                            hideLoading();
+                        }
+                    };
+                    script.onerror = function() {
+                        console.warn(`⚠️ Failed to load ${module}, continuing...`);
+                        loadedModules++;
+                        
+                        if (loadedModules === modules.length) {
+                            console.log('⚠️ Some modules failed, but initializing anyway...');
+                            hideLoading();
+                        }
+                    };
+                    document.head.appendChild(script);
+                });
+                
+            } catch (error) {
+                console.error('Error loading IDE modules:', error);
+                initBasicIDE();
+            }
+        }
+
+        // Start loading
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 DOM loaded, starting IDE initialization...');
+            
+            // Set initial dark theme
+            document.body.setAttribute('data-theme', 'dark');
+            
+            // Start loading with a delay to show the loading screen
+            setTimeout(function() {
+                loadFullIDE();
+            }, 1000);
+        });
+    </script>
 </body>
 </html>

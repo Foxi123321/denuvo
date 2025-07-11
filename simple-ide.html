@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrazyIDE - Simple Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1e1e1e;
+            color: #cccccc;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .menu-bar {
+            height: 35px;
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 16px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+            color: #007acc;
+        }
+
+        .menu-btn {
+            padding: 6px 12px;
+            background: transparent;
+            border: none;
+            color: #cccccc;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .menu-btn:hover {
+            background: #3e3e42;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: #252526;
+            border-right: 1px solid #3e3e42;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-tabs {
+            display: flex;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        .sidebar-tab {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+            background: #2d2d30;
+            border-right: 1px solid #3e3e42;
+            transition: background 0.2s;
+        }
+
+        .sidebar-tab:hover, .sidebar-tab.active {
+            background: #007acc;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .file-tree {
+            margin-bottom: 16px;
+        }
+
+        .file-item, .folder-item {
+            padding: 4px 8px;
+            margin: 2px 0;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .file-item:hover, .folder-item:hover {
+            background: #3e3e42;
+        }
+
+        .editor-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tabs {
+            height: 35px;
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            align-items: center;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            background: #3e3e42;
+            border-right: 1px solid #2d2d30;
+            cursor: pointer;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab.active {
+            background: #1e1e1e;
+            border-bottom: 2px solid #007acc;
+        }
+
+        .tab-close {
+            background: none;
+            border: none;
+            color: #cccccc;
+            cursor: pointer;
+            padding: 0;
+            font-size: 12px;
+        }
+
+        .editor-container {
+            flex: 1;
+            position: relative;
+        }
+
+        .editor {
+            width: 100%;
+            height: 100%;
+            background: #1e1e1e;
+            color: #cccccc;
+            border: none;
+            outline: none;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            padding: 16px;
+            resize: none;
+            line-height: 1.4;
+        }
+
+        .welcome-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            flex-direction: column;
+            gap: 20px;
+            text-align: center;
+            background: #1e1e1e;
+        }
+
+        .welcome-title {
+            font-size: 48px;
+            color: #007acc;
+            margin-bottom: 16px;
+        }
+
+        .welcome-subtitle {
+            font-size: 20px;
+            color: #cccccc;
+            margin-bottom: 32px;
+        }
+
+        .welcome-actions {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .welcome-btn {
+            padding: 12px 24px;
+            background: #007acc;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .welcome-btn:hover {
+            background: #005a9e;
+        }
+
+        .bottom-panel {
+            height: 200px;
+            background: #252526;
+            border-top: 1px solid #3e3e42;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .bottom-tabs {
+            height: 35px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        .bottom-tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .bottom-tab.active {
+            border-bottom-color: #007acc;
+            color: #007acc;
+        }
+
+        .terminal {
+            flex: 1;
+            background: #000;
+            color: #00ff00;
+            font-family: monospace;
+            padding: 16px;
+            overflow-y: auto;
+            font-size: 14px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Theme toggle */
+        [data-theme="light"] {
+            background: #ffffff;
+            color: #333333;
+        }
+
+        [data-theme="light"] .menu-bar,
+        [data-theme="light"] .sidebar,
+        [data-theme="light"] .bottom-panel {
+            background: #f3f3f3;
+            color: #333333;
+        }
+
+        [data-theme="light"] .editor {
+            background: #ffffff;
+            color: #333333;
+        }
+
+        .notification {
+            position: fixed;
+            top: 50px;
+            right: 20px;
+            padding: 12px 20px;
+            background: #007acc;
+            color: white;
+            border-radius: 6px;
+            transform: translateX(100%);
+            transition: transform 0.3s;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success { background: #28a745; }
+        .notification.warning { background: #ffc107; color: #333; }
+        .notification.error { background: #dc3545; }
+    </style>
+</head>
+<body data-theme="dark">
+    <div class="app">
+        <!-- Menu Bar -->
+        <div class="menu-bar">
+            <div class="logo">
+                <span>🚀</span>
+                <span>CrazyIDE</span>
+            </div>
+            <button class="menu-btn" onclick="createNewFile()">📄 New File</button>
+            <button class="menu-btn" onclick="saveFile()">💾 Save</button>
+            <button class="menu-btn" onclick="toggleTheme()">🌙 Theme</button>
+            <button class="menu-btn" onclick="runCode()">▶️ Run</button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-tabs">
+                    <div class="sidebar-tab active" onclick="switchTab('files')">Files</div>
+                    <div class="sidebar-tab" onclick="switchTab('git')">Git</div>
+                    <div class="sidebar-tab" onclick="switchTab('ai')">AI</div>
+                </div>
+                <div class="sidebar-content">
+                    <div id="files-panel">
+                        <h3>📁 File Explorer</h3>
+                        <div class="file-tree" id="file-tree">
+                            <div class="folder-item" onclick="toggleFolder(this)">
+                                📁 project/
+                            </div>
+                            <div class="file-item" onclick="openSampleFile('index.html')" style="margin-left: 20px;">
+                                📄 index.html
+                            </div>
+                            <div class="file-item" onclick="openSampleFile('styles.css')" style="margin-left: 20px;">
+                                📄 styles.css
+                            </div>
+                            <div class="file-item" onclick="openSampleFile('script.js')" style="margin-left: 20px;">
+                                📄 script.js
+                            </div>
+                        </div>
+                    </div>
+                    <div id="git-panel" class="hidden">
+                        <h3>🔀 Git Status</h3>
+                        <p>📊 Branch: main</p>
+                        <p>✅ No changes</p>
+                        <button class="menu-btn" onclick="showNotification('Git commit simulated!', 'success')">Commit</button>
+                    </div>
+                    <div id="ai-panel" class="hidden">
+                        <h3>🤖 AI Assistant</h3>
+                        <p>💬 Ask me anything about coding!</p>
+                        <input type="text" placeholder="Type your question..." style="width: 100%; padding: 8px; margin: 8px 0; background: #2d2d30; border: 1px solid #3e3e42; color: #cccccc; border-radius: 4px;">
+                        <button class="menu-btn" onclick="simulateAI()">Ask AI</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Editor Area -->
+            <div class="editor-area">
+                <div class="tabs" id="tabs">
+                    <!-- Tabs will be added here -->
+                </div>
+                <div class="editor-container">
+                    <div class="welcome-screen" id="welcome-screen">
+                        <div class="welcome-title">🚀 CrazyIDE</div>
+                        <div class="welcome-subtitle">Simple Edition - Ready to Code!</div>
+                        <div class="welcome-actions">
+                            <button class="welcome-btn" onclick="createNewFile()">
+                                <span>📄</span> New File
+                            </button>
+                            <button class="welcome-btn" onclick="openSampleFile('demo.js')">
+                                <span>🎯</span> Try Demo
+                            </button>
+                            <button class="welcome-btn" onclick="showHelp()">
+                                <span>❓</span> Help
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Panel -->
+        <div class="bottom-panel">
+            <div class="bottom-tabs">
+                <div class="bottom-tab active">🖥️ Terminal</div>
+                <div class="bottom-tab">📤 Output</div>
+                <div class="bottom-tab">⚠️ Problems</div>
+            </div>
+            <div class="terminal" id="terminal">
+                <div>Welcome to CrazyIDE Terminal! 🚀</div>
+                <div>Type 'help' for available commands</div>
+                <div id="terminal-output"></div>
+                <div style="display: flex; align-items: center; margin-top: 8px;">
+                    <span style="color: #00ff00;">$ </span>
+                    <input type="text" id="terminal-input" style="flex: 1; background: transparent; border: none; color: #00ff00; outline: none; margin-left: 8px;" onkeypress="handleTerminalInput(event)">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let files = new Map();
+        let currentFile = null;
+        let fileCounter = 0;
+
+        // Sample files
+        const sampleFiles = {
+            'index.html': `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Awesome Website</title>
+</head>
+<body>
+    <h1>Hello, World! 🌍</h1>
+    <p>Welcome to my awesome website!</p>
+    <button onclick="alert('Hello from CrazyIDE!')">Click me!</button>
+</body>
+</html>`,
+            'styles.css': `/* Awesome CSS Styles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-align: center;
+}
+
+h1 {
+    font-size: 3em;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+button {
+    padding: 12px 24px;
+    font-size: 16px;
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+button:hover {
+    transform: scale(1.05);
+}`,
+            'script.js': `// Amazing JavaScript Code! 🎉
+console.log('Hello from CrazyIDE!');
+
+// Cool function to greet users
+function greetUser(name = 'Developer') {
+    const messages = [
+        \`Hey \${name}! Welcome to CrazyIDE! 🚀\`,
+        \`Coding is awesome, \${name}! 💻\`,
+        \`You're doing great, \${name}! Keep coding! ✨\`
+    ];
+    
+    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+    return randomMessage;
+}
+
+// Try it out!
+console.log(greetUser('Awesome Coder'));
+
+// Fun animation
+function createSparkle() {
+    console.log('✨ Sparkle created!');
+}
+
+setInterval(createSparkle, 2000);`,
+            'demo.js': `// 🎮 CrazyIDE Demo - Interactive Coding Fun!
+
+// 1. Colorful Console Art
+console.log('%c🚀 Welcome to CrazyIDE! 🚀', 'color: #ff6b6b; font-size: 20px; font-weight: bold;');
+console.log('%c💻 Let\\'s code something amazing!', 'color: #4ecdc4; font-size: 16px;');
+
+// 2. Fun Data Structures
+const coolProjects = [
+    { name: '🌈 Rainbow Generator', difficulty: 'Easy', fun: 10 },
+    { name: '🎵 Music Player', difficulty: 'Medium', fun: 9 },
+    { name: '🤖 AI Chatbot', difficulty: 'Hard', fun: 11 },
+    { name: '🎮 Game Engine', difficulty: 'Expert', fun: 15 }
+];
+
+// 3. Interactive Functions
+function pickRandomProject() {
+    const project = coolProjects[Math.floor(Math.random() * coolProjects.length)];
+    console.log(\`🎯 Today's project: \${project.name}\`);
+    console.log(\`📊 Difficulty: \${project.difficulty}\`);
+    console.log(\`🎉 Fun Level: \${project.fun}/10\`);
+    return project;
+}
+
+// 4. ASCII Art Generator
+function createASCIIArt(text) {
+    console.log(\`
+╔══════════════════════════════════╗
+║     \${text.padEnd(30)}║
+╚══════════════════════════════════╝\`);
+}
+
+// 5. Run the demo!
+createASCIIArt('CrazyIDE is Amazing!');
+pickRandomProject();
+
+// 6. Celebration
+setTimeout(() => {
+    console.log('%c🎊 Congratulations! You\\'re now ready to build amazing things! 🎊', 
+                'color: #ffd93d; font-size: 18px; font-weight: bold;');
+}, 1000);`
+        };
+
+        // Create new file
+        function createNewFile() {
+            const fileName = prompt('Enter filename:', `untitled-${++fileCounter}.txt`);
+            if (!fileName) return;
+            
+            openFile(fileName, '// Welcome to CrazyIDE!\n// Start coding here...\n\n');
+            showNotification(`Created ${fileName}`, 'success');
+        }
+
+        // Open file
+        function openFile(fileName, content = '') {
+            // Hide welcome screen
+            document.getElementById('welcome-screen').style.display = 'none';
+            
+            // Store file
+            files.set(fileName, content);
+            currentFile = fileName;
+            
+            // Create tab
+            createTab(fileName);
+            
+            // Show editor
+            showEditor(content);
+        }
+
+        // Open sample file
+        function openSampleFile(fileName) {
+            const content = sampleFiles[fileName] || `// Sample file: ${fileName}\n`;
+            openFile(fileName, content);
+        }
+
+        // Create tab
+        function createTab(fileName) {
+            const tabs = document.getElementById('tabs');
+            
+            // Remove existing tab if it exists
+            const existingTab = document.querySelector(`[data-file="${fileName}"]`);
+            if (existingTab) {
+                existingTab.remove();
+            }
+            
+            const tab = document.createElement('div');
+            tab.className = 'tab active';
+            tab.dataset.file = fileName;
+            tab.innerHTML = `
+                <span>📄 ${fileName}</span>
+                <button class="tab-close" onclick="closeTab('${fileName}')">&times;</button>
+            `;
+            
+            // Remove active from other tabs
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            
+            tabs.appendChild(tab);
+            
+            tab.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('tab-close')) {
+                    switchToFile(fileName);
+                }
+            });
+        }
+
+        // Show editor
+        function showEditor(content) {
+            const container = document.querySelector('.editor-container');
+            container.innerHTML = `
+                <textarea class="editor" id="current-editor" placeholder="Start coding...">${content}</textarea>
+            `;
+            
+            // Auto-save on change
+            document.getElementById('current-editor').addEventListener('input', (e) => {
+                if (currentFile) {
+                    files.set(currentFile, e.target.value);
+                }
+            });
+        }
+
+        // Switch to file
+        function switchToFile(fileName) {
+            currentFile = fileName;
+            const content = files.get(fileName) || '';
+            showEditor(content);
+            
+            // Update tab states
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.file === fileName);
+            });
+        }
+
+        // Close tab
+        function closeTab(fileName) {
+            files.delete(fileName);
+            const tab = document.querySelector(`[data-file="${fileName}"]`);
+            if (tab) tab.remove();
+            
+            // If this was the current file, switch to another or show welcome
+            if (currentFile === fileName) {
+                const remainingTabs = document.querySelectorAll('.tab');
+                if (remainingTabs.length > 0) {
+                    const nextFile = remainingTabs[remainingTabs.length - 1].dataset.file;
+                    switchToFile(nextFile);
+                } else {
+                    document.getElementById('welcome-screen').style.display = 'flex';
+                    currentFile = null;
+                }
+            }
+        }
+
+        // Save file
+        function saveFile() {
+            if (!currentFile) {
+                showNotification('No file to save', 'warning');
+                return;
+            }
+            
+            const content = files.get(currentFile);
+            // In a real IDE, this would save to the server/filesystem
+            localStorage.setItem(`crazyide_${currentFile}`, content);
+            showNotification(`Saved ${currentFile}`, 'success');
+        }
+
+        // Run code
+        function runCode() {
+            if (!currentFile) {
+                showNotification('No file to run', 'warning');
+                return;
+            }
+            
+            const content = files.get(currentFile);
+            const terminal = document.getElementById('terminal-output');
+            
+            terminal.innerHTML += `<div style="color: #ffd93d;">Running ${currentFile}...</div>`;
+            
+            if (currentFile.endsWith('.js')) {
+                try {
+                    // Capture console.log
+                    const originalLog = console.log;
+                    console.log = (...args) => {
+                        terminal.innerHTML += `<div>${args.join(' ')}</div>`;
+                        originalLog.apply(console, args);
+                    };
+                    
+                    eval(content);
+                    
+                    // Restore console.log
+                    console.log = originalLog;
+                    
+                    terminal.innerHTML += `<div style="color: #28a745;">✅ Execution completed!</div>`;
+                } catch (error) {
+                    terminal.innerHTML += `<div style="color: #dc3545;">❌ Error: ${error.message}</div>`;
+                }
+            } else {
+                terminal.innerHTML += `<div style="color: #17a2b8;">ℹ️ File type not executable in browser</div>`;
+            }
+            
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        // Toggle theme
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            
+            showNotification(`Switched to ${newTheme} theme`, 'success');
+        }
+
+        // Switch sidebar tab
+        function switchTab(tabName) {
+            // Update tab states
+            document.querySelectorAll('.sidebar-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Show corresponding panel
+            document.querySelectorAll('[id$="-panel"]').forEach(panel => {
+                panel.classList.add('hidden');
+            });
+            document.getElementById(`${tabName}-panel`).classList.remove('hidden');
+        }
+
+        // Terminal commands
+        function handleTerminalInput(event) {
+            if (event.key === 'Enter') {
+                const input = event.target;
+                const command = input.value.trim();
+                const output = document.getElementById('terminal-output');
+                
+                output.innerHTML += `<div><span style="color: #00ff00;">$ </span>${command}</div>`;
+                
+                // Process command
+                if (command === 'help') {
+                    output.innerHTML += `<div>Available commands:
+- help: Show this help
+- clear: Clear terminal
+- ls: List files
+- run: Run current file
+- theme: Toggle theme
+- joke: Tell a joke
+- matrix: The Matrix effect</div>`;
+                } else if (command === 'clear') {
+                    output.innerHTML = '';
+                } else if (command === 'ls') {
+                    output.innerHTML += `<div>📁 Files: ${Array.from(files.keys()).join(', ') || 'No files open'}</div>`;
+                } else if (command === 'run') {
+                    runCode();
+                } else if (command === 'theme') {
+                    toggleTheme();
+                } else if (command === 'joke') {
+                    const jokes = [
+                        "Why do programmers prefer dark mode? Because light attracts bugs! 🐛",
+                        "Why did the developer go broke? Because he used up all his cache! 💰",
+                        "There are only 10 types of people: those who understand binary and those who don't! 🤖",
+                        "Why do Java developers wear glasses? Because they can't C#! 👓"
+                    ];
+                    output.innerHTML += `<div>${jokes[Math.floor(Math.random() * jokes.length)]}</div>`;
+                } else if (command === 'matrix') {
+                    const chars = '01';
+                    let matrix = '';
+                    for (let i = 0; i < 5; i++) {
+                        let line = '';
+                        for (let j = 0; j < 40; j++) {
+                            line += chars[Math.floor(Math.random() * chars.length)];
+                        }
+                        matrix += `<div style="color: #00ff00; font-family: monospace;">${line}</div>`;
+                    }
+                    output.innerHTML += matrix;
+                    output.innerHTML += `<div style="color: #ff6b6b;">Wake up, Neo... 😎</div>`;
+                } else if (command) {
+                    output.innerHTML += `<div>Command not found: ${command}</div>`;
+                }
+                
+                input.value = '';
+                output.scrollTop = output.scrollHeight;
+            }
+        }
+
+        // Simulate AI response
+        function simulateAI() {
+            const responses = [
+                "🤖 Great question! In JavaScript, you can use const for variables that won't change.",
+                "💡 Try using arrow functions for cleaner code: const myFunc = () => { ... }",
+                "🎯 For debugging, use console.log() to inspect your variables!",
+                "🚀 Pro tip: Use the browser's developer tools (F12) for advanced debugging!",
+                "✨ Remember to write clean, readable code. Your future self will thank you!",
+                "🔥 Modern JavaScript is awesome! Try using destructuring and template literals."
+            ];
+            
+            const response = responses[Math.floor(Math.random() * responses.length)];
+            showNotification(response, 'success');
+        }
+
+        // Show help
+        function showHelp() {
+            showNotification(`🎯 CrazyIDE Features:
+• 📄 Create/edit files
+• 🎨 Toggle themes  
+• ▶️ Run JavaScript code
+• 🖥️ Interactive terminal
+• 🤖 AI assistant
+• 💾 Auto-save files`, 'success');
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            showNotification('🚀 CrazyIDE Simple Edition loaded successfully!', 'success');
+            
+            // Load demo file after a moment
+            setTimeout(() => {
+                openSampleFile('demo.js');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
