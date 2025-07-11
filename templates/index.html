@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DRM Slayer IDE - Advanced Analysis Environment</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="ide-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-shield-alt"></i> DRM Slayer</h2>
+                <p class="version">v3.0 Ultimate</p>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="#dashboard" class="nav-item active" data-tab="dashboard">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a></li>
+                    <li><a href="#file-explorer" class="nav-item" data-tab="file-explorer">
+                        <i class="fas fa-folder-open"></i> File Explorer
+                    </a></li>
+                    <li><a href="#analysis" class="nav-item" data-tab="analysis">
+                        <i class="fas fa-search"></i> Analysis
+                    </a></li>
+                    <li><a href="#virtualization" class="nav-item" data-tab="virtualization">
+                        <i class="fas fa-cube"></i> Virtualization
+                    </a></li>
+                    <li><a href="#network" class="nav-item" data-tab="network">
+                        <i class="fas fa-network-wired"></i> Network
+                    </a></li>
+                    <li><a href="#plugins" class="nav-item" data-tab="plugins">
+                        <i class="fas fa-puzzle-piece"></i> Plugins
+                    </a></li>
+                    <li><a href="#settings" class="nav-item" data-tab="settings">
+                        <i class="fas fa-cog"></i> Settings
+                    </a></li>
+                </ul>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="system-status">
+                    <div class="status-item">
+                        <span class="status-label">CPU:</span>
+                        <span class="status-value" id="cpu-usage">--</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">RAM:</span>
+                        <span class="status-value" id="ram-usage">--</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Sessions:</span>
+                        <span class="status-value" id="active-sessions">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <div class="breadcrumb" id="breadcrumb">
+                    <span>DRM Slayer IDE</span>
+                </div>
+                <div class="top-bar-actions">
+                    <button class="btn btn-primary" id="scan-btn">
+                        <i class="fas fa-search"></i> Quick Scan
+                    </button>
+                    <button class="btn btn-success" id="virtualize-btn">
+                        <i class="fas fa-cube"></i> Enable Virtualization
+                    </button>
+                    <button class="btn btn-warning" id="network-btn">
+                        <i class="fas fa-network-wired"></i> Network Tools
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Content Areas -->
+            <div class="content-area">
+                <!-- Dashboard Tab -->
+                <div id="dashboard" class="tab-content active">
+                    <div class="dashboard-grid">
+                        <div class="dashboard-card">
+                            <h3><i class="fas fa-chart-line"></i> System Overview</h3>
+                            <canvas id="system-chart"></canvas>
+                        </div>
+                        
+                        <div class="dashboard-card">
+                            <h3><i class="fas fa-shield-alt"></i> DRM Detection</h3>
+                            <div class="drm-stats">
+                                <div class="stat-item">
+                                    <span class="stat-number" id="drm-detected">0</span>
+                                    <span class="stat-label">DRM Detected</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number" id="files-scanned">0</span>
+                                    <span class="stat-label">Files Scanned</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number" id="success-rate">0%</span>
+                                    <span class="stat-label">Success Rate</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="dashboard-card">
+                            <h3><i class="fas fa-clock"></i> Recent Activity</h3>
+                            <div class="activity-log" id="activity-log">
+                                <div class="activity-item">
+                                    <span class="activity-time">12:34:56</span>
+                                    <span class="activity-text">IDE initialized successfully</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="dashboard-card">
+                            <h3><i class="fas fa-exclamation-triangle"></i> Alerts</h3>
+                            <div class="alerts-list" id="alerts-list">
+                                <div class="alert-item info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <span>System ready for analysis</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- File Explorer Tab -->
+                <div id="file-explorer" class="tab-content">
+                    <div class="file-explorer-header">
+                        <div class="path-navigator">
+                            <button class="btn btn-sm" id="back-btn">
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <input type="text" id="path-input" value="." class="path-input">
+                            <button class="btn btn-sm" id="refresh-btn">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                        <div class="view-options">
+                            <button class="btn btn-sm active" data-view="list">
+                                <i class="fas fa-list"></i>
+                            </button>
+                            <button class="btn btn-sm" data-view="grid">
+                                <i class="fas fa-th"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="file-list" id="file-list">
+                        <!-- Files will be loaded here -->
+                    </div>
+                </div>
+                
+                <!-- Analysis Tab -->
+                <div id="analysis" class="tab-content">
+                    <div class="analysis-header">
+                        <h3>File Analysis</h3>
+                        <div class="analysis-controls">
+                            <input type="file" id="file-input" multiple>
+                            <button class="btn btn-primary" id="analyze-btn">
+                                <i class="fas fa-search"></i> Analyze
+                            </button>
+                            <button class="btn btn-success" id="real-time-btn">
+                                <i class="fas fa-play"></i> Real-time
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="analysis-results" id="analysis-results">
+                        <div class="analysis-tabs">
+                            <button class="analysis-tab active" data-tab="overview">Overview</button>
+                            <button class="analysis-tab" data-tab="drm">DRM Analysis</button>
+                            <button class="analysis-tab" data-tab="binary">Binary Analysis</button>
+                            <button class="analysis-tab" data-tab="security">Security</button>
+                            <button class="analysis-tab" data-tab="hex">Hex Viewer</button>
+                        </div>
+                        
+                        <div class="analysis-content">
+                            <div id="overview" class="analysis-panel active">
+                                <p>Select a file to begin analysis...</p>
+                            </div>
+                            
+                            <div id="drm" class="analysis-panel">
+                                <div class="drm-analysis-results" id="drm-results"></div>
+                            </div>
+                            
+                            <div id="binary" class="analysis-panel">
+                                <div class="binary-analysis-results" id="binary-results"></div>
+                            </div>
+                            
+                            <div id="security" class="analysis-panel">
+                                <div class="security-analysis-results" id="security-results"></div>
+                            </div>
+                            
+                            <div id="hex" class="analysis-panel">
+                                <div class="hex-viewer" id="hex-viewer"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Virtualization Tab -->
+                <div id="virtualization" class="tab-content">
+                    <div class="virtualization-header">
+                        <h3>Hardware Virtualization</h3>
+                        <p>Emulate different hardware profiles to bypass DRM checks</p>
+                    </div>
+                    
+                    <div class="virtualization-controls">
+                        <div class="control-group">
+                            <label>Hardware Profile:</label>
+                            <select id="hw-profile">
+                                <option value="default">Default</option>
+                                <option value="gaming">Gaming PC</option>
+                                <option value="workstation">Workstation</option>
+                                <option value="laptop">Laptop</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
+                        
+                        <div class="control-group">
+                            <button class="btn btn-success" id="enable-virtualization">
+                                <i class="fas fa-cube"></i> Enable Virtualization
+                            </button>
+                            <button class="btn btn-danger" id="disable-virtualization">
+                                <i class="fas fa-stop"></i> Disable Virtualization
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="virtualization-status">
+                        <div class="status-card">
+                            <h4>Current Profile</h4>
+                            <div id="current-profile">Default</div>
+                        </div>
+                        
+                        <div class="status-card">
+                            <h4>Virtualization Status</h4>
+                            <div id="virtualization-status">Disabled</div>
+                        </div>
+                        
+                        <div class="status-card">
+                            <h4>Hardware Info</h4>
+                            <div id="hardware-info">
+                                <div>CPU: <span id="cpu-info">--</span></div>
+                                <div>RAM: <span id="ram-info">--</span></div>
+                                <div>GPU: <span id="gpu-info">--</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Network Tab -->
+                <div id="network" class="tab-content">
+                    <div class="network-header">
+                        <h3>Network Manipulation</h3>
+                        <p>Intercept and modify network traffic for DRM bypass</p>
+                    </div>
+                    
+                    <div class="network-controls">
+                        <div class="control-group">
+                            <label>Protocol:</label>
+                            <select id="protocol-select">
+                                <option value="tcp">TCP</option>
+                                <option value="udp">UDP</option>
+                                <option value="http">HTTP</option>
+                                <option value="https">HTTPS</option>
+                            </select>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label>Local Port:</label>
+                            <input type="number" id="local-port" value="8080" min="1024" max="65535">
+                        </div>
+                        
+                        <div class="control-group">
+                            <label>Remote Host:</label>
+                            <input type="text" id="remote-host" value="localhost">
+                        </div>
+                        
+                        <div class="control-group">
+                            <label>Remote Port:</label>
+                            <input type="number" id="remote-port" value="80" min="1" max="65535">
+                        </div>
+                        
+                        <div class="control-group">
+                            <button class="btn btn-success" id="start-proxy">
+                                <i class="fas fa-play"></i> Start Proxy
+                            </button>
+                            <button class="btn btn-danger" id="stop-proxy">
+                                <i class="fas fa-stop"></i> Stop Proxy
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="network-traffic">
+                        <h4>Traffic Log</h4>
+                        <div class="traffic-log" id="traffic-log">
+                            <!-- Traffic logs will appear here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Plugins Tab -->
+                <div id="plugins" class="tab-content">
+                    <div class="plugins-header">
+                        <h3>Plugin System</h3>
+                        <p>Extend DRM Slayer with custom analysis modules</p>
+                    </div>
+                    
+                    <div class="plugins-list" id="plugins-list">
+                        <div class="plugin-item">
+                            <div class="plugin-info">
+                                <h4>Advanced Binary Analysis</h4>
+                                <p>Enhanced binary analysis with pattern recognition</p>
+                                <span class="plugin-status enabled">Enabled</span>
+                            </div>
+                            <div class="plugin-controls">
+                                <button class="btn btn-sm btn-danger">Disable</button>
+                            </div>
+                        </div>
+                        
+                        <div class="plugin-item">
+                            <div class="plugin-info">
+                                <h4>Machine Learning Detector</h4>
+                                <p>AI-powered DRM detection using neural networks</p>
+                                <span class="plugin-status disabled">Disabled</span>
+                            </div>
+                            <div class="plugin-controls">
+                                <button class="btn btn-sm btn-success">Enable</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Settings Tab -->
+                <div id="settings" class="tab-content">
+                    <div class="settings-header">
+                        <h3>IDE Settings</h3>
+                    </div>
+                    
+                    <div class="settings-grid">
+                        <div class="settings-section">
+                            <h4>General</h4>
+                            <div class="setting-item">
+                                <label>Auto-save interval (seconds):</label>
+                                <input type="number" value="30" min="5" max="300">
+                            </div>
+                            <div class="setting-item">
+                                <label>Theme:</label>
+                                <select>
+                                    <option value="dark">Dark</option>
+                                    <option value="light">Light</option>
+                                    <option value="cyberpunk">Cyberpunk</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-section">
+                            <h4>Analysis</h4>
+                            <div class="setting-item">
+                                <label>Scan depth:</label>
+                                <select>
+                                    <option value="quick">Quick</option>
+                                    <option value="normal">Normal</option>
+                                    <option value="deep">Deep</option>
+                                </select>
+                            </div>
+                            <div class="setting-item">
+                                <label>Enable real-time monitoring:</label>
+                                <input type="checkbox" checked>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-section">
+                            <h4>Network</h4>
+                            <div class="setting-item">
+                                <label>Default proxy port:</label>
+                                <input type="number" value="8080" min="1024" max="65535">
+                            </div>
+                            <div class="setting-item">
+                                <label>Enable SSL interception:</label>
+                                <input type="checkbox">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modals -->
+    <div id="scan-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Quick Scan</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="scan-options">
+                    <label>Scan Type:</label>
+                    <select id="scan-type">
+                        <option value="all">All DRM Types</option>
+                        <option value="denuvo">Denuvo Only</option>
+                        <option value="steam">Steam Only</option>
+                        <option value="epic">Epic Only</option>
+                        <option value="custom">Custom Selection</option>
+                    </select>
+                    
+                    <label>Target Path:</label>
+                    <input type="text" id="scan-path" value=".">
+                    
+                    <label>Recursive Scan:</label>
+                    <input type="checkbox" id="recursive-scan" checked>
+                </div>
+                
+                <div class="scan-progress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <div class="progress-text">Scanning...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="start-scan">Start Scan</button>
+                <button class="btn btn-secondary" id="cancel-scan">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/ide.js') }}"></script>
+</body>
+</html>
