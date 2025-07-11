@@ -60,28 +60,97 @@ class FreeAIIDE {
             // Wait for puter to be available
             if (typeof puter === 'undefined') {
                 console.error('Puter.js not loaded');
-                this.addChatMessage('System', 'Warning: AI features may not work properly. Please refresh the page.');
+                this.addChatMessage('System', '⚠️ Puter.js not loaded. Please refresh the page to enable AI features.');
                 return;
             }
 
-            // Check if user is signed in, if not, they'll be prompted when making first AI request
             console.log('Puter.js loaded successfully!');
             this.addChatMessage('AI', 'Welcome to FreeAI IDE! 🚀 I\'m your AI coding assistant powered by puter.js.');
-            this.addChatMessage('AI', '✨ <strong>How it works:</strong><br>• No API keys needed!<br>• When you first use AI features, you\'ll be prompted to sign in to puter.com<br>• After that, enjoy unlimited free AI assistance!<br>• Try asking me anything or press Ctrl+K for inline help');
-            this.addChatMessage('AI', '🛠️ <strong>NEW: AI Tools!</strong><br>• I can automatically create files from code I generate<br>• Smart file naming based on code content<br>• Extract only code parts (like qodo-ai/pr-agent)<br>• Toggle these features in the sidebar<br>• Try: "Create a Python snake game"');
+            this.addChatMessage('AI', '✨ <strong>How it works:</strong><br>• No API keys needed!<br>• Click the "🔐 Authenticate" button below to sign in to puter.com<br>• After that, enjoy unlimited free AI assistance!<br>• Try asking me anything or press Ctrl+K for inline help');
             
-            // Test connection with a simple ping (but don't show errors to user)
-            try {
-                await this.testPuterConnection();
-                this.addChatMessage('AI', '✅ AI connection test successful! I\'m ready to help with your coding.');
-            } catch (error) {
-                console.log('Puter test connection failed, but this is normal before first use:', error);
-                // Don't show error to user, it's expected before sign-in
-            }
+            // Add authentication button to chat
+            this.showAuthButton();
             
         } catch (error) {
             console.error('Puter initialization error:', error);
-            this.addChatMessage('System', 'AI initialization failed. Please refresh the page.');
+            this.addChatMessage('System', '❌ AI initialization failed. Please refresh the page.');
+        }
+    }
+
+    showAuthButton() {
+        const authDiv = document.createElement('div');
+        authDiv.className = 'auth-prompt ai-message';
+        authDiv.innerHTML = `
+            <i class="fas fa-robot"></i>
+            <div class="message-content">
+                <div class="auth-content">
+                    <h3>🔐 Authentication Required</h3>
+                    <p>To use unlimited AI features, you need to authenticate with puter.com (it's free!).</p>
+                    <button class="auth-btn" onclick="ide.authenticatePuter()">
+                        <i class="fas fa-sign-in-alt"></i> Sign in to Puter.com
+                    </button>
+                    <p class="auth-note">This opens puter.com in a new tab. After signing in, come back and try asking me something!</p>
+                </div>
+            </div>
+        `;
+        
+        const chatMessages = document.getElementById('chatMessages');
+        if (chatMessages) {
+            chatMessages.appendChild(authDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    }
+
+    async authenticatePuter() {
+        try {
+            // Open puter.com in new tab for authentication
+            window.open('https://puter.com/app', '_blank');
+            
+            this.addChatMessage('System', '🌐 Opened puter.com in a new tab. Please sign in and then come back here to test the AI!');
+            this.addChatMessage('System', '💡 After signing in, try asking me: "Create a simple Python calculator" to test the connection.');
+            
+            // Add a test button
+            const testDiv = document.createElement('div');
+            testDiv.className = 'test-connection ai-message';
+            testDiv.innerHTML = `
+                <i class="fas fa-robot"></i>
+                <div class="message-content">
+                    <p>After signing in to puter.com, click below to test the AI connection:</p>
+                    <button class="test-ai-btn" onclick="ide.testAIConnection()">
+                        <i class="fas fa-bolt"></i> Test AI Connection
+                    </button>
+                </div>
+            `;
+            
+            const chatMessages = document.getElementById('chatMessages');
+            if (chatMessages) {
+                chatMessages.appendChild(testDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+        } catch (error) {
+            console.error('Authentication failed:', error);
+            this.addChatMessage('System', '❌ Failed to open authentication. Please manually visit puter.com and sign in, then try again.');
+        }
+    }
+
+    async testAIConnection() {
+        try {
+            this.addChatMessage('System', '🔄 Testing AI connection...');
+            
+            const response = await this.callAI('Hello! Say "Connection successful!" if you can read this message.');
+            
+            this.addChatMessage('AI', '✅ ' + response);
+            this.addChatMessage('System', '🎉 AI connection working perfectly! You can now use all AI features.');
+            
+        } catch (error) {
+            console.error('AI test failed:', error);
+            
+            if (error.message.includes('auth') || error.message.includes('sign')) {
+                this.addChatMessage('System', '🔐 Still not authenticated. Please make sure you\'re signed in to puter.com and try again.');
+            } else {
+                this.addChatMessage('System', `❌ Connection test failed: ${error.message}`);
+            }
         }
     }
 
