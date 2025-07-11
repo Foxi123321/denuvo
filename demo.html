@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreeAI IDE Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            color: #007acc;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .header p {
+            font-size: 1.2em;
+            color: #cccccc;
+        }
+        .launch-btn {
+            display: inline-block;
+            background: linear-gradient(45deg, #007acc, #0099ff);
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 10px;
+            transition: transform 0.2s;
+        }
+        .launch-btn:hover {
+            transform: translateY(-2px);
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 40px 0;
+        }
+        .feature-card {
+            background: #2d2d30;
+            border: 1px solid #3e3e42;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .feature-card h3 {
+            color: #007acc;
+            margin-bottom: 10px;
+        }
+        .demo-section {
+            background: #2d2d30;
+            border: 1px solid #3e3e42;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .code-example {
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .prompt-example {
+            background: #3e3e42;
+            border-left: 4px solid #007acc;
+            padding: 10px 15px;
+            margin: 10px 0;
+            font-style: italic;
+        }
+        .screenshot {
+            width: 100%;
+            max-width: 600px;
+            border: 1px solid #3e3e42;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 FreeAI IDE Demo</h1>
+            <p>Experience the power of unlimited AI-assisted coding</p>
+            <a href="index.html" class="launch-btn">Launch FreeAI IDE</a>
+            <a href="#demo" class="launch-btn" style="background: #666;">See Demo Below</a>
+        </div>
+
+        <div class="features">
+            <div class="feature-card">
+                <h3>🤖 Unlimited AI Models</h3>
+                <p>Access GPT-4o, Claude 3.5 Sonnet, Llama, and more - completely free with no usage limits!</p>
+            </div>
+            <div class="feature-card">
+                <h3>💻 Full IDE Experience</h3>
+                <p>Professional code editor, file management, terminal, and build system all in your browser.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🛠️ Smart Code Features</h3>
+                <p>AI code completion, explanation, refactoring, and test generation at your fingertips.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🏗️ Project Templates</h3>
+                <p>Quick start with React, Node.js, Python, Android, and more project templates.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🔧 Workflow Automation</h3>
+                <p>n8n-style visual workflows for deployment, AI enhancement, and API integration.</p>
+            </div>
+        </div>
+
+        <div id="demo" class="demo-section">
+            <h2>🎯 Try These Demo Features</h2>
+            
+            <h3>1. AI Code Completion</h3>
+            <p>Copy this code into the editor and press <code>Ctrl+K</code> for AI suggestions:</p>
+            <div class="code-example">
+function calculateTax(income, rate) {
+    // Press Ctrl+K here to get AI completion
+}</div>
+            <div class="prompt-example">
+                💡 Try asking: "Complete this function to calculate tax with proper validation"
+            </div>
+
+            <h3>2. Code Explanation</h3>
+            <p>Select this code and use "Explain Code" from AI shortcuts:</p>
+            <div class="code-example">
+const debounce = (func, delay) => {
+    let timeoutId;
+    return (...args) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => func.apply(this, args), delay);
+    };
+};</div>
+
+            <h3>3. Natural Language Terminal</h3>
+            <p>Try these natural language commands in the terminal:</p>
+            <div class="code-example">
+install react dependencies
+create a new component
+build the project for production
+show me all files in current directory</div>
+
+            <h3>4. AI Chat Examples</h3>
+            <p>Ask the AI assistant these questions:</p>
+            <div class="prompt-example">
+                "How do I optimize this React component for performance?"<br>
+                "Generate a REST API endpoint for user authentication"<br>
+                "Create unit tests for my calculator function"<br>
+                "Explain the difference between let, const, and var in JavaScript"
+            </div>
+
+            <h3>5. Project Creation</h3>
+            <p>Click the "+" button in the file explorer and try creating:</p>
+            <ul>
+                <li><strong>React App</strong> - Modern React application</li>
+                <li><strong>Node.js API</strong> - Express server with REST endpoints</li>
+                <li><strong>Python App</strong> - Flask web application</li>
+                <li><strong>Android App</strong> - Kotlin mobile application</li>
+            </ul>
+
+            <h3>6. Build & Deploy</h3>
+            <p>After creating a project, click "Build" to see the magic:</p>
+            <ul>
+                <li>Automatic project type detection</li>
+                <li>Real-time build progress</li>
+                <li>Error detection and reporting</li>
+                <li>Output generation for deployment</li>
+            </ul>
+
+            <h3>7. Workflow Automation (NEW!)</h3>
+            <p>Try the n8n-style workflow automation:</p>
+            <div class="code-example">
+Click "Build Workflow" in the sidebar
+Choose from:
+- Auto Deploy (CI/CD pipeline)
+- AI Enhancement (code review + optimization)  
+- API Integration (connect external services)</div>
+            <div class="prompt-example">
+                💡 Try: Create a project, then set up auto-deployment workflow!
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🎮 Hands-On Tutorial</h2>
+            
+            <h3>Step 1: Create Your First Project</h3>
+            <ol>
+                <li>Launch the IDE using the button above</li>
+                <li>Click the "+" button in the file explorer</li>
+                <li>Choose "React App" template</li>
+                <li>Wait for AI to generate the project structure</li>
+            </ol>
+
+            <h3>Step 2: Get AI Help</h3>
+            <ol>
+                <li>Open the generated App.js file</li>
+                <li>Select some code</li>
+                <li>Click "Explain Code" in the AI shortcuts</li>
+                <li>Ask questions in the AI chat panel</li>
+            </ol>
+
+            <h3>Step 3: Use Terminal Magic</h3>
+            <ol>
+                <li>Type: "install additional dependencies for styling"</li>
+                <li>Watch AI convert it to proper npm commands</li>
+                <li>Try: "start the development server"</li>
+            </ol>
+
+            <h3>Step 4: Build Your Project</h3>
+            <ol>
+                <li>Make some changes to your code</li>
+                <li>Click the "Build" button</li>
+                <li>Watch the build process in real-time</li>
+                <li>See the output for deployment</li>
+            </ol>
+
+            <h3>Step 5: Set Up Automation (NEW!)</h3>
+            <ol>
+                <li>Click "Build Workflow" in the sidebar</li>
+                <li>Choose "Auto Deployment" workflow</li>
+                <li>Watch the n8n-style automation execute</li>
+                <li>See real-time workflow progress</li>
+                <li>Your project now auto-deploys on changes!</li>
+            </ol>
+        </div>
+
+        <div class="demo-section">
+            <h2>🔧 Advanced Features to Explore</h2>
+            
+            <div class="features">
+                <div class="feature-card">
+                    <h3>AI Refactoring</h3>
+                    <p>Select messy code and let AI clean it up with modern best practices.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Test Generation</h3>
+                    <p>Automatically generate comprehensive unit tests for your functions.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Multi-File Editing</h3>
+                    <p>Work with multiple files simultaneously using the tabbed interface.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Syntax Highlighting</h3>
+                    <p>Support for JavaScript, Python, HTML, CSS, Java, C++, and more.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>💡 Pro Tips</h2>
+            <ul>
+                <li><strong>Model Selection:</strong> Try different AI models for different tasks - Claude for analysis, GPT-4o for general coding</li>
+                <li><strong>Context Awareness:</strong> The AI knows about your entire project, so ask project-specific questions</li>
+                <li><strong>Keyboard Shortcuts:</strong> Use Ctrl+K for quick AI help, Ctrl+S to save, Ctrl+B to build</li>
+                <li><strong>Natural Language:</strong> Don't just use commands - talk to the AI like a human!</li>
+                <li><strong>File Persistence:</strong> Your files are saved in browser storage automatically</li>
+            </ul>
+        </div>
+
+        <div class="demo-section">
+            <h2>🌟 What Makes FreeAI IDE Special?</h2>
+            
+            <div class="features">
+                <div class="feature-card">
+                    <h3>🆓 Completely Free</h3>
+                    <p>No subscriptions, no API keys, no hidden costs. Unlimited AI assistance forever.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>🌐 Browser-Based</h3>
+                    <p>No installation required. Works on any device with a modern web browser.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>🧠 Multiple AI Models</h3>
+                    <p>Access to the latest AI models from OpenAI, Anthropic, Meta, and more.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>🚀 Production Ready</h3>
+                    <p>Build real applications that can be deployed as web apps, desktop apps, or mobile apps.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="header" style="margin-top: 40px;">
+            <h2>Ready to revolutionize your coding experience?</h2>
+            <a href="index.html" class="launch-btn">🚀 Launch FreeAI IDE Now</a>
+        </div>
+    </div>
+</body>
+</html>
