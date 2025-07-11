@@ -1,0 +1,53 @@
+{
+  "name": "freeai-ide",
+  "version": "1.0.0",
+  "description": "A powerful, free IDE that combines Cursor AI features with unlimited AI assistance powered by puter.js",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "serve": "npx http-server -p 8000 -o",
+    "deploy": "gh-pages -d .",
+    "build": "echo 'No build process needed - static files only'",
+    "test": "echo 'No tests specified yet'"
+  },
+  "keywords": [
+    "ide",
+    "ai",
+    "coding",
+    "editor",
+    "puter",
+    "cursor",
+    "free",
+    "unlimited",
+    "gpt",
+    "claude",
+    "llama",
+    "javascript",
+    "python",
+    "react",
+    "nodejs",
+    "development"
+  ],
+  "author": "FreeAI IDE Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/freeai-ide.git"
+  },
+  "homepage": "https://your-username.github.io/freeai-ide",
+  "bugs": {
+    "url": "https://github.com/your-username/freeai-ide/issues"
+  },
+  "devDependencies": {
+    "gh-pages": "^4.0.0",
+    "http-server": "^14.1.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "browserslist": [
+    "defaults",
+    "not ie 11",
+    "not op_mini all"
+  ]
+}

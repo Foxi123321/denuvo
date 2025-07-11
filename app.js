@@ -1,0 +1,1027 @@
+// FreeAI IDE - Main Application
+class FreeAIIDE {
+    constructor() {
+        this.editor = null;
+        this.currentFile = null;
+        this.files = new Map();
+        this.projectStructure = {};
+        this.tabs = [];
+        this.currentModel = 'gpt-4o';
+        this.terminalHistory = [];
+        this.buildConfigs = {
+            react: {
+                build: 'npm run build',
+                dev: 'npm start',
+                install: 'npm install'
+            },
+            node: {
+                build: 'npm run build',
+                dev: 'npm run dev',
+                install: 'npm install'
+            },
+            python: {
+                build: 'python setup.py build',
+                dev: 'python app.py',
+                install: 'pip install -r requirements.txt'
+            },
+            android: {
+                build: './gradlew build',
+                dev: './gradlew installDebug',
+                install: './gradlew dependencies'
+            }
+        };
+        
+        this.init();
+    }
+
+    async init() {
+        this.initEditor();
+        this.setupEventListeners();
+        this.loadSampleProject();
+        
+        // Wait for puter to be ready
+        if (typeof puter !== 'undefined') {
+            console.log('Puter.js loaded successfully!');
+            this.addChatMessage('AI', 'Puter.js loaded! I can now help you with AI-powered coding assistance.');
+        } else {
+            console.error('Puter.js not loaded');
+            this.addChatMessage('System', 'Warning: AI features may not work properly. Please refresh the page.');
+        }
+    }
+
+    initEditor() {
+        const editorElement = document.getElementById('codeEditor');
+        this.editor = CodeMirror.fromTextArea(editorElement, {
+            lineNumbers: true,
+            theme: 'dracula',
+            mode: 'javascript',
+            autoCloseBrackets: true,
+            matchBrackets: true,
+            indentUnit: 2,
+            tabSize: 2,
+            lineWrapping: true,
+            extraKeys: {
+                'Ctrl-K': () => this.showAIInlineHelp(),
+                'Ctrl-S': () => this.saveFile(),
+                'Ctrl-N': () => this.newFile(),
+                'Ctrl-O': () => this.openFile(),
+                'Ctrl-/': 'toggleComment',
+                'Tab': 'indentMore',
+                'Shift-Tab': 'indentLess'
+            }
+        });
+
+        this.editor.on('change', () => {
+            this.markFileAsModified();
+        });
+
+        this.editor.on('cursorActivity', () => {
+            this.debounce(() => this.aiCodeHints(), 1000);
+        });
+    }
+
+    setupEventListeners() {
+        // Terminal input
+        document.getElementById('terminalInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.executeTerminalCommand(e.target.value);
+                e.target.value = '';
+            }
+        });
+
+        // Chat input
+        document.getElementById('chatInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.sendChatMessage();
+            }
+        });
+
+        // Model selector
+        document.getElementById('aiModel').addEventListener('change', (e) => {
+            this.currentModel = e.target.value;
+            this.addChatMessage('System', `Switched to ${e.target.value} model`);
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch (e.key) {
+                    case 'k':
+                        if (e.shiftKey) {
+                            e.preventDefault();
+                            this.showCommandPalette();
+                        }
+                        break;
+                    case 'b':
+                        e.preventDefault();
+                        this.buildProject();
+                        break;
+                }
+            }
+        });
+    }
+
+    loadSampleProject() {
+        const sampleFiles = {
+            'index.html': `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My App</title>
+</head>
+<body>
+    <h1>Hello World!</h1>
+    <script src="app.js"></script>
+</body>
+</html>`,
+            'app.js': `// Welcome to FreeAI IDE!
+console.log('Hello from FreeAI IDE!');
+
+function greet(name) {
+    return \`Hello, \${name}!\`;
+}
+
+// Try asking the AI to help you with your code!
+// Press Ctrl+K for inline AI assistance
+greet('Developer');`,
+            'styles.css': `body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f5f5f5;
+}
+
+h1 {
+    color: #333;
+    text-align: center;
+}`
+        };
+
+        Object.entries(sampleFiles).forEach(([filename, content]) => {
+            this.files.set(filename, {
+                content,
+                modified: false,
+                language: this.getLanguageFromExtension(filename)
+            });
+        });
+
+        this.updateFileTree();
+        this.openFileInEditor('app.js');
+    }
+
+    // File Management
+    newFile() {
+        const filename = prompt('Enter filename:');
+        if (filename) {
+            this.files.set(filename, {
+                content: '',
+                modified: false,
+                language: this.getLanguageFromExtension(filename)
+            });
+            this.updateFileTree();
+            this.openFileInEditor(filename);
+        }
+    }
+
+    openFile() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.js,.ts,.html,.css,.py,.java,.cpp,.c,.json,.md';
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const content = await file.text();
+                this.files.set(file.name, {
+                    content,
+                    modified: false,
+                    language: this.getLanguageFromExtension(file.name)
+                });
+                this.updateFileTree();
+                this.openFileInEditor(file.name);
+            }
+        };
+        input.click();
+    }
+
+    saveFile() {
+        if (this.currentFile) {
+            const fileData = this.files.get(this.currentFile);
+            fileData.content = this.editor.getValue();
+            fileData.modified = false;
+            
+            // Save to browser storage
+            localStorage.setItem(`freeai_ide_${this.currentFile}`, fileData.content);
+            
+            this.updateTabTitle(this.currentFile);
+            this.addToOutput(`Saved: ${this.currentFile}`, 'success');
+        }
+    }
+
+    openFileInEditor(filename) {
+        const fileData = this.files.get(filename);
+        if (fileData) {
+            this.currentFile = filename;
+            this.editor.setValue(fileData.content);
+            this.editor.setOption('mode', fileData.language);
+            this.addTab(filename);
+            this.updateFileTree();
+        }
+    }
+
+    // Tab Management
+    addTab(filename) {
+        if (!this.tabs.includes(filename)) {
+            this.tabs.push(filename);
+        }
+        this.updateTabBar();
+        this.setActiveTab(filename);
+    }
+
+    updateTabBar() {
+        const tabBar = document.getElementById('tabBar');
+        tabBar.innerHTML = '';
+        
+        this.tabs.forEach(filename => {
+            const tab = document.createElement('div');
+            tab.className = 'tab';
+            tab.innerHTML = `
+                <span>${filename}</span>
+                <span class="tab-close" onclick="closeTab('${filename}')">&times;</span>
+            `;
+            tab.onclick = (e) => {
+                if (!e.target.classList.contains('tab-close')) {
+                    this.openFileInEditor(filename);
+                }
+            };
+            tabBar.appendChild(tab);
+        });
+    }
+
+    setActiveTab(filename) {
+        document.querySelectorAll('.tab').forEach((tab, index) => {
+            tab.classList.toggle('active', this.tabs[index] === filename);
+        });
+    }
+
+    closeTab(filename) {
+        const index = this.tabs.indexOf(filename);
+        if (index > -1) {
+            this.tabs.splice(index, 1);
+            
+            if (this.currentFile === filename) {
+                if (this.tabs.length > 0) {
+                    this.openFileInEditor(this.tabs[0]);
+                } else {
+                    this.currentFile = null;
+                    this.editor.setValue('');
+                }
+            }
+            
+            this.updateTabBar();
+        }
+    }
+
+    // AI-Powered Features
+    async showAIInlineHelp() {
+        const selectedText = this.editor.getSelection();
+        const cursorPos = this.editor.getCursor();
+        const currentLine = this.editor.getLine(cursorPos.line);
+        
+        let prompt = '';
+        if (selectedText) {
+            prompt = `Explain this code: ${selectedText}`;
+        } else if (currentLine.trim()) {
+            prompt = `Complete this code: ${currentLine}`;
+        } else {
+            prompt = 'Help me write code here';
+        }
+
+        try {
+            this.showLoading(true);
+            const response = await this.callAI(prompt);
+            this.showAISuggestion(response);
+        } catch (error) {
+            console.error('AI Error:', error);
+            this.addChatMessage('System', 'AI request failed. Please try again.');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    async aiCodeComplete() {
+        const cursor = this.editor.getCursor();
+        const currentLine = this.editor.getLine(cursor.line);
+        const previousLines = [];
+        
+        for (let i = Math.max(0, cursor.line - 5); i < cursor.line; i++) {
+            previousLines.push(this.editor.getLine(i));
+        }
+        
+        const context = previousLines.join('\n') + '\n' + currentLine;
+        const prompt = `Complete this code:\n${context}\n\nProvide only the completion, no explanations:`;
+
+        try {
+            this.showLoading(true);
+            const response = await this.callAI(prompt);
+            this.showAISuggestion(response);
+        } catch (error) {
+            console.error('AI Error:', error);
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    async aiExplainCode() {
+        const selectedText = this.editor.getSelection();
+        if (!selectedText) {
+            this.addChatMessage('System', 'Please select some code to explain.');
+            return;
+        }
+
+        const prompt = `Explain this code in detail:\n${selectedText}`;
+        
+        try {
+            this.showLoading(true);
+            const response = await this.callAI(prompt);
+            this.addChatMessage('AI', response);
+        } catch (error) {
+            console.error('AI Error:', error);
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    async aiRefactorCode() {
+        const selectedText = this.editor.getSelection();
+        if (!selectedText) {
+            this.addChatMessage('System', 'Please select some code to refactor.');
+            return;
+        }
+
+        const prompt = `Refactor this code to make it cleaner and more efficient:\n${selectedText}\n\nProvide only the refactored code:`;
+        
+        try {
+            this.showLoading(true);
+            const response = await this.callAI(prompt);
+            this.showAISuggestion(response);
+        } catch (error) {
+            console.error('AI Error:', error);
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    async aiGenerateTests() {
+        const selectedText = this.editor.getSelection() || this.editor.getValue();
+        const prompt = `Generate unit tests for this code:\n${selectedText}`;
+        
+        try {
+            this.showLoading(true);
+            const response = await this.callAI(prompt);
+            
+            // Create a new test file
+            const testFilename = `${this.currentFile?.replace(/\.[^/.]+$/, "") || 'test'}.test.js`;
+            this.files.set(testFilename, {
+                content: response,
+                modified: true,
+                language: 'javascript'
+            });
+            this.updateFileTree();
+            this.openFileInEditor(testFilename);
+        } catch (error) {
+            console.error('AI Error:', error);
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    async callAI(prompt, useStream = false) {
+        if (typeof puter === 'undefined') {
+            throw new Error('Puter.js not available');
+        }
+
+        try {
+            if (useStream) {
+                const response = await puter.ai.chat(prompt, {
+                    model: this.currentModel,
+                    stream: true
+                });
+                
+                let fullResponse = '';
+                for await (const part of response) {
+                    if (part?.text) {
+                        fullResponse += part.text;
+                    }
+                }
+                return fullResponse;
+            } else {
+                const response = await puter.ai.chat(prompt, {
+                    model: this.currentModel
+                });
+                
+                // Handle different response formats
+                if (typeof response === 'string') {
+                    return response;
+                } else if (response.message?.content) {
+                    if (Array.isArray(response.message.content)) {
+                        return response.message.content[0].text || response.message.content[0];
+                    }
+                    return response.message.content;
+                } else if (response.choices?.[0]?.message?.content) {
+                    return response.choices[0].message.content;
+                }
+                
+                return 'AI response received but format is unclear.';
+            }
+        } catch (error) {
+            console.error('AI API Error:', error);
+            throw error;
+        }
+    }
+
+    // Chat System
+    async sendChatMessage() {
+        const input = document.getElementById('chatInput');
+        const message = input.value.trim();
+        if (!message) return;
+
+        this.addChatMessage('User', message);
+        input.value = '';
+
+        // Add context about current file
+        let contextualPrompt = message;
+        if (this.currentFile && this.editor.getValue()) {
+            contextualPrompt = `Current file: ${this.currentFile}\n\nCode:\n${this.editor.getValue()}\n\nQuestion: ${message}`;
+        }
+
+        try {
+            this.showLoading(true);
+            const response = await this.callAI(contextualPrompt, true);
+            this.addChatMessage('AI', response);
+        } catch (error) {
+            this.addChatMessage('System', 'Failed to get AI response. Please try again.');
+            console.error('Chat AI Error:', error);
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    addChatMessage(sender, message) {
+        const chatMessages = document.getElementById('chatMessages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = sender === 'User' ? 'user-message' : 'ai-message';
+        
+        const icon = sender === 'User' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
+        messageDiv.innerHTML = `
+            ${icon}
+            <div class="message-content">${this.formatMessage(message)}</div>
+        `;
+        
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    formatMessage(message) {
+        // Basic markdown support
+        return message
+            .replace(/```(.*?)```/gs, '<pre><code>$1</code></pre>')
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/\n/g, '<br>');
+    }
+
+    // Terminal System
+    async executeTerminalCommand(command) {
+        this.addTerminalLine(`$ ${command}`);
+        this.terminalHistory.push(command);
+
+        // Check if it's a natural language command
+        if (this.isNaturalLanguage(command)) {
+            try {
+                this.showLoading(true);
+                const prompt = `Convert this natural language request to a terminal command: "${command}". Provide only the command, no explanations.`;
+                const aiCommand = await this.callAI(prompt);
+                const cleanCommand = aiCommand.replace(/```[\s\S]*?```/g, '').replace(/`([^`]+)`/g, '$1').trim();
+                
+                this.addTerminalLine(`AI suggests: ${cleanCommand}`);
+                this.addTerminalLine('Execute? (y/n):');
+                
+                // For demo, we'll simulate execution
+                setTimeout(() => {
+                    this.simulateCommand(cleanCommand);
+                }, 1000);
+                
+            } catch (error) {
+                this.addTerminalLine('Error: Could not convert natural language to command');
+            } finally {
+                this.showLoading(false);
+            }
+        } else {
+            this.simulateCommand(command);
+        }
+    }
+
+    isNaturalLanguage(command) {
+        const naturalIndicators = ['install', 'create', 'build', 'run', 'start', 'stop', 'list', 'show', 'make'];
+        const hasSpaces = command.includes(' ') && !command.startsWith('npm ') && !command.startsWith('git ') && !command.startsWith('python ');
+        const hasNaturalWords = naturalIndicators.some(word => command.toLowerCase().includes(word));
+        
+        return hasSpaces && hasNaturalWords && !command.includes('/') && !command.includes('--');
+    }
+
+    simulateCommand(command) {
+        // Simulate common commands
+        const cmd = command.toLowerCase().trim();
+        
+        if (cmd === 'ls' || cmd === 'dir') {
+            const files = Array.from(this.files.keys());
+            files.forEach(file => this.addTerminalLine(file));
+        } else if (cmd.startsWith('cat ')) {
+            const filename = cmd.substring(4);
+            const fileData = this.files.get(filename);
+            if (fileData) {
+                this.addTerminalLine(fileData.content);
+            } else {
+                this.addTerminalLine(`cat: ${filename}: No such file or directory`);
+            }
+        } else if (cmd === 'npm install') {
+            this.addTerminalLine('Installing dependencies...');
+            setTimeout(() => {
+                this.addTerminalLine('Dependencies installed successfully!');
+            }, 2000);
+        } else if (cmd === 'npm start' || cmd === 'npm run dev') {
+            this.addTerminalLine('Starting development server...');
+            this.addTerminalLine('Server running on http://localhost:3000');
+        } else if (cmd === 'git status') {
+            this.addTerminalLine('On branch main');
+            this.addTerminalLine('Changes not staged for commit:');
+            this.files.forEach((data, filename) => {
+                if (data.modified) {
+                    this.addTerminalLine(`\tmodified: ${filename}`);
+                }
+            });
+        } else {
+            this.addTerminalLine(`${command}: command not found (simulated)`);
+        }
+    }
+
+    addTerminalLine(text, type = 'output') {
+        const terminal = document.getElementById('terminalContent');
+        const line = document.createElement('div');
+        line.className = `terminal-line ${type}`;
+        line.textContent = text;
+        terminal.appendChild(line);
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    // Build System
+    async buildProject() {
+        const projectType = this.detectProjectType();
+        const config = this.buildConfigs[projectType];
+        
+        if (!config) {
+            this.addToOutput('Unknown project type. Cannot build.', 'error');
+            return;
+        }
+
+        this.addToOutput(`Building ${projectType} project...`, 'info');
+        
+        // Simulate build process
+        this.addToOutput('Checking dependencies...', 'info');
+        await this.sleep(1000);
+        
+        this.addToOutput('Compiling...', 'info');
+        await this.sleep(2000);
+        
+        this.addToOutput('Optimizing...', 'info');
+        await this.sleep(1500);
+        
+        // Check for common errors in code
+        const hasErrors = this.checkForErrors();
+        
+        if (hasErrors) {
+            this.addToOutput('Build failed with errors!', 'error');
+        } else {
+            this.addToOutput('Build completed successfully!', 'success');
+            this.addToOutput(`Output: ./dist/${this.currentFile || 'index.html'}`, 'success');
+        }
+    }
+
+    detectProjectType() {
+        const fileExtensions = Array.from(this.files.keys()).map(f => f.split('.').pop());
+        
+        if (this.files.has('package.json')) {
+            const packageContent = this.files.get('package.json')?.content || '';
+            if (packageContent.includes('react')) return 'react';
+            if (packageContent.includes('express')) return 'node';
+        }
+        
+        if (fileExtensions.includes('py') || this.files.has('requirements.txt')) {
+            return 'python';
+        }
+        
+        if (this.files.has('build.gradle') || this.files.has('AndroidManifest.xml')) {
+            return 'android';
+        }
+        
+        return 'web'; // Default
+    }
+
+    checkForErrors() {
+        // Simple syntax checking
+        const jsFiles = Array.from(this.files.entries()).filter(([name]) => name.endsWith('.js'));
+        
+        for (const [filename, data] of jsFiles) {
+            try {
+                new Function(data.content);
+            } catch (error) {
+                this.addToOutput(`Error in ${filename}: ${error.message}`, 'error');
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    // Project Templates
+    createNewProject() {
+        document.getElementById('projectModal').style.display = 'flex';
+    }
+
+    async createProject(type) {
+        this.closeModal('projectModal');
+        this.showLoading(true);
+        
+        try {
+            const templates = await this.getProjectTemplate(type);
+            
+            // Clear current files
+            this.files.clear();
+            this.tabs = [];
+            
+            // Add template files
+            Object.entries(templates).forEach(([filename, content]) => {
+                this.files.set(filename, {
+                    content,
+                    modified: false,
+                    language: this.getLanguageFromExtension(filename)
+                });
+            });
+            
+            this.updateFileTree();
+            this.updateTabBar();
+            
+            // Open main file
+            const mainFile = type === 'react' ? 'src/App.js' : 
+                             type === 'python' ? 'app.py' : 
+                             type === 'android' ? 'app/src/main/java/MainActivity.kt' :
+                             'index.html';
+            
+            if (this.files.has(mainFile)) {
+                this.openFileInEditor(mainFile);
+            } else {
+                // Open first available file
+                const firstFile = Array.from(this.files.keys())[0];
+                if (firstFile) this.openFileInEditor(firstFile);
+            }
+            
+            this.addToOutput(`Created new ${type} project!`, 'success');
+            
+        } catch (error) {
+            console.error('Project creation error:', error);
+            this.addToOutput('Failed to create project', 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    async getProjectTemplate(type) {
+        // Use AI to generate project templates
+        const prompt = `Generate a complete ${type} project template with multiple files. Include package.json, main files, and basic configuration. Return as a JSON object where keys are file paths and values are file contents.`;
+        
+        try {
+            const response = await this.callAI(prompt);
+            
+            // Try to parse JSON from response
+            const jsonMatch = response.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                return JSON.parse(jsonMatch[0]);
+            }
+            
+            // Fallback templates
+            return this.getFallbackTemplate(type);
+            
+        } catch (error) {
+            console.error('AI template generation failed:', error);
+            return this.getFallbackTemplate(type);
+        }
+    }
+
+    getFallbackTemplate(type) {
+        const templates = {
+            react: {
+                'package.json': JSON.stringify({
+                    name: 'react-app',
+                    version: '1.0.0',
+                    dependencies: {
+                        'react': '^18.0.0',
+                        'react-dom': '^18.0.0'
+                    },
+                    scripts: {
+                        'start': 'react-scripts start',
+                        'build': 'react-scripts build'
+                    }
+                }, null, 2),
+                'src/App.js': `import React from 'react';
+import './App.css';
+
+function App() {
+  return (
+    <div className="App">
+      <h1>Hello React!</h1>
+      <p>Welcome to your new React app built with FreeAI IDE!</p>
+    </div>
+  );
+}
+
+export default App;`,
+                'src/App.css': `.App {
+  text-align: center;
+  margin: 50px;
+}
+
+h1 {
+  color: #007acc;
+}`,
+                'public/index.html': `<!DOCTYPE html>
+<html>
+<head>
+    <title>React App</title>
+</head>
+<body>
+    <div id="root"></div>
+</body>
+</html>`
+            },
+            python: {
+                'app.py': `from flask import Flask, render_template, jsonify
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+@app.route('/api/hello')
+def hello():
+    return jsonify({'message': 'Hello from Python!'})
+
+if __name__ == '__main__':
+    app.run(debug=True)`,
+                'requirements.txt': `Flask==2.3.3
+python-dotenv==1.0.0`,
+                'templates/index.html': `<!DOCTYPE html>
+<html>
+<head>
+    <title>Python App</title>
+</head>
+<body>
+    <h1>Hello Python!</h1>
+    <p>Your Flask app is running!</p>
+</body>
+</html>`
+            },
+            node: {
+                'package.json': JSON.stringify({
+                    name: 'node-api',
+                    version: '1.0.0',
+                    main: 'server.js',
+                    dependencies: {
+                        'express': '^4.18.0',
+                        'cors': '^2.8.5'
+                    },
+                    scripts: {
+                        'start': 'node server.js',
+                        'dev': 'nodemon server.js'
+                    }
+                }, null, 2),
+                'server.js': `const express = require('express');
+const cors = require('cors');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(cors());
+app.use(express.json());
+
+app.get('/', (req, res) => {
+    res.json({ message: 'Hello from Node.js API!' });
+});
+
+app.listen(PORT, () => {
+    console.log(\`Server running on port \${PORT}\`);
+});`
+            }
+        };
+        
+        return templates[type] || templates.react;
+    }
+
+    // Utility Functions
+    updateFileTree() {
+        const fileTree = document.getElementById('fileTree');
+        fileTree.innerHTML = '';
+        
+        Array.from(this.files.keys()).forEach(filename => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            if (filename === this.currentFile) {
+                fileItem.classList.add('active');
+            }
+            
+            const icon = this.getFileIcon(filename);
+            const modifiedIndicator = this.files.get(filename).modified ? ' •' : '';
+            
+            fileItem.innerHTML = `
+                <i class="${icon}"></i>
+                <span>${filename}${modifiedIndicator}</span>
+            `;
+            
+            fileItem.onclick = () => this.openFileInEditor(filename);
+            fileTree.appendChild(fileItem);
+        });
+    }
+
+    getFileIcon(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        const icons = {
+            'js': 'fab fa-js-square',
+            'ts': 'fab fa-js-square',
+            'html': 'fab fa-html5',
+            'css': 'fab fa-css3-alt',
+            'py': 'fab fa-python',
+            'java': 'fab fa-java',
+            'cpp': 'fas fa-code',
+            'c': 'fas fa-code',
+            'json': 'fas fa-file-code',
+            'md': 'fab fa-markdown'
+        };
+        return icons[ext] || 'fas fa-file';
+    }
+
+    getLanguageFromExtension(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        const languages = {
+            'js': 'javascript',
+            'ts': 'javascript',
+            'html': 'htmlmixed',
+            'css': 'css',
+            'py': 'python',
+            'java': 'text/x-java',
+            'cpp': 'text/x-c++src',
+            'c': 'text/x-csrc',
+            'json': 'application/json',
+            'md': 'markdown'
+        };
+        return languages[ext] || 'text';
+    }
+
+    markFileAsModified() {
+        if (this.currentFile) {
+            const fileData = this.files.get(this.currentFile);
+            if (fileData) {
+                fileData.modified = true;
+                this.updateFileTree();
+                this.updateTabTitle(this.currentFile);
+            }
+        }
+    }
+
+    updateTabTitle(filename) {
+        const tabs = document.querySelectorAll('.tab');
+        const tabIndex = this.tabs.indexOf(filename);
+        if (tabs[tabIndex]) {
+            const fileData = this.files.get(filename);
+            const modifiedIndicator = fileData.modified ? ' •' : '';
+            tabs[tabIndex].querySelector('span').textContent = filename + modifiedIndicator;
+        }
+    }
+
+    addToOutput(message, type = 'info') {
+        const output = document.getElementById('buildOutput');
+        const line = document.createElement('div');
+        line.className = `output-line ${type}`;
+        line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        output.appendChild(line);
+        output.scrollTop = output.scrollHeight;
+    }
+
+    showAISuggestion(suggestion) {
+        const suggestionsDiv = document.getElementById('aiSuggestions');
+        const contentDiv = document.getElementById('suggestionContent');
+        
+        contentDiv.textContent = suggestion;
+        suggestionsDiv.style.display = 'block';
+        
+        // Store suggestion for accept/reject
+        this.currentSuggestion = suggestion;
+    }
+
+    acceptAISuggestion() {
+        if (this.currentSuggestion) {
+            const cursor = this.editor.getCursor();
+            this.editor.replaceRange(this.currentSuggestion, cursor);
+            this.hideAISuggestion();
+        }
+    }
+
+    rejectAISuggestion() {
+        this.hideAISuggestion();
+    }
+
+    hideAISuggestion() {
+        document.getElementById('aiSuggestions').style.display = 'none';
+        this.currentSuggestion = null;
+    }
+
+    showLoading(show) {
+        document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+    }
+
+    closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    clearTerminal() {
+        document.getElementById('terminalContent').innerHTML = '';
+    }
+
+    clearOutput() {
+        document.getElementById('buildOutput').innerHTML = '';
+    }
+
+    toggleTerminal() {
+        const terminal = document.querySelector('.terminal-container');
+        terminal.style.display = terminal.style.display === 'none' ? 'flex' : 'none';
+    }
+
+    debounce(func, wait) {
+        clearTimeout(this.debounceTimer);
+        this.debounceTimer = setTimeout(func, wait);
+    }
+
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async aiCodeHints() {
+        // Auto-suggest code improvements (disabled by default to avoid spam)
+        // This could be enabled with a toggle in settings
+        return;
+    }
+}
+
+// Global Functions (for HTML onclick handlers)
+window.newFile = () => ide.newFile();
+window.openFile = () => ide.openFile();
+window.saveFile = () => ide.saveFile();
+window.buildProject = () => ide.buildProject();
+window.createNewProject = () => ide.createNewProject();
+window.createProject = (type) => ide.createProject(type);
+window.closeModal = (modalId) => ide.closeModal(modalId);
+window.closeTab = (filename) => ide.closeTab(filename);
+window.clearTerminal = () => ide.clearTerminal();
+window.clearOutput = () => ide.clearOutput();
+window.toggleTerminal = () => ide.toggleTerminal();
+window.acceptAISuggestion = () => ide.acceptAISuggestion();
+window.rejectAISuggestion = () => ide.rejectAISuggestion();
+window.sendChatMessage = () => ide.sendChatMessage();
+window.aiCodeComplete = () => ide.aiCodeComplete();
+window.aiExplainCode = () => ide.aiExplainCode();
+window.aiRefactorCode = () => ide.aiRefactorCode();
+window.aiGenerateTests = () => ide.aiGenerateTests();
+window.toggleAIAgent = () => {
+    const rightPanel = document.querySelector('.right-panel');
+    rightPanel.style.display = rightPanel.style.display === 'none' ? 'flex' : 'none';
+};
+
+window.handleChatKeyPress = (event) => {
+    if (event.key === 'Enter') {
+        ide.sendChatMessage();
+    }
+};
+
+window.handleTerminalKeyPress = (event) => {
+    if (event.key === 'Enter') {
+        ide.executeTerminalCommand(event.target.value);
+        event.target.value = '';
+    }
+};
+
+// Initialize IDE when page loads
+let ide;
+document.addEventListener('DOMContentLoaded', () => {
+    ide = new FreeAIIDE();
+});

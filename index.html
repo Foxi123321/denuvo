@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreeAI IDE - Powered by Puter.js</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Top Menu Bar -->
+    <div class="menu-bar">
+        <div class="menu-section">
+            <span class="logo"><i class="fas fa-code"></i> FreeAI IDE</span>
+        </div>
+        <div class="menu-section">
+            <button class="menu-btn" onclick="newFile()"><i class="fas fa-file"></i> New</button>
+            <button class="menu-btn" onclick="openFile()"><i class="fas fa-folder-open"></i> Open</button>
+            <button class="menu-btn" onclick="saveFile()"><i class="fas fa-save"></i> Save</button>
+            <button class="menu-btn" onclick="buildProject()"><i class="fas fa-hammer"></i> Build</button>
+        </div>
+        <div class="menu-section">
+            <button class="menu-btn ai-btn" onclick="toggleAIAgent()">
+                <i class="fas fa-robot"></i> AI Agent
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h3><i class="fas fa-folder"></i> Explorer</h3>
+                <button class="btn-icon" onclick="createNewProject()">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <div class="file-tree" id="fileTree">
+                <!-- File tree will be populated here -->
+            </div>
+            
+            <!-- AI Quick Actions -->
+            <div class="ai-shortcuts">
+                <h4><i class="fas fa-magic"></i> AI Quick Actions</h4>
+                <button class="ai-action-btn" onclick="aiCodeComplete()">
+                    <i class="fas fa-wand-magic-sparkles"></i> Complete Code
+                </button>
+                <button class="ai-action-btn" onclick="aiExplainCode()">
+                    <i class="fas fa-lightbulb"></i> Explain Code
+                </button>
+                <button class="ai-action-btn" onclick="aiRefactorCode()">
+                    <i class="fas fa-sync"></i> Refactor
+                </button>
+                <button class="ai-action-btn" onclick="aiGenerateTests()">
+                    <i class="fas fa-vial"></i> Generate Tests
+                </button>
+            </div>
+        </div>
+
+        <!-- Editor Area -->
+        <div class="editor-container">
+            <!-- Tab Bar -->
+            <div class="tab-bar" id="tabBar">
+                <!-- Tabs will be added here -->
+            </div>
+            
+            <!-- Code Editor -->
+            <div class="editor-wrapper">
+                <textarea id="codeEditor" placeholder="Start coding... Press Ctrl+K for AI assistance"></textarea>
+            </div>
+            
+            <!-- Inline AI Suggestions -->
+            <div class="ai-suggestions" id="aiSuggestions" style="display: none;">
+                <div class="suggestion-header">
+                    <span><i class="fas fa-robot"></i> AI Suggestion</span>
+                    <div>
+                        <button onclick="acceptAISuggestion()">Accept</button>
+                        <button onclick="rejectAISuggestion()">Reject</button>
+                    </div>
+                </div>
+                <div class="suggestion-content" id="suggestionContent"></div>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="right-panel">
+            <!-- AI Chat -->
+            <div class="ai-chat-container">
+                <div class="chat-header">
+                    <h3><i class="fas fa-comments"></i> AI Assistant</h3>
+                    <div class="model-selector">
+                        <select id="aiModel">
+                            <option value="gpt-4o">GPT-4o</option>
+                            <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
+                            <option value="meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo">Llama 3.1</option>
+                            <option value="gpt-4.1">GPT-4.1</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="ai-message">
+                        <i class="fas fa-robot"></i>
+                        <div>Welcome to FreeAI IDE! I'm your AI coding assistant powered by puter.js. How can I help you today?</div>
+                    </div>
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" id="chatInput" placeholder="Ask me anything about your code..." 
+                           onkeypress="handleChatKeyPress(event)">
+                    <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+
+            <!-- Build Output -->
+            <div class="build-output">
+                <div class="output-header">
+                    <h4><i class="fas fa-terminal"></i> Build Output</h4>
+                    <button onclick="clearOutput()"><i class="fas fa-trash"></i></button>
+                </div>
+                <div class="output-content" id="buildOutput">
+                    <div class="output-line">Ready to build...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terminal -->
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <span><i class="fas fa-terminal"></i> Terminal</span>
+            <div>
+                <button onclick="clearTerminal()">Clear</button>
+                <button onclick="toggleTerminal()">Hide</button>
+            </div>
+        </div>
+        <div class="terminal-content" id="terminalContent">
+            <div class="terminal-line">
+                <span class="prompt">$ </span>
+                <span>Welcome to FreeAI IDE Terminal</span>
+            </div>
+        </div>
+        <div class="terminal-input-line">
+            <span class="prompt">$ </span>
+            <input type="text" id="terminalInput" placeholder="Type commands or use natural language (AI will convert)"
+                   onkeypress="handleTerminalKeyPress(event)">
+        </div>
+    </div>
+
+    <!-- Project Templates Modal -->
+    <div class="modal" id="projectModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Project</h2>
+                <button onclick="closeModal('projectModal')">&times;</button>
+            </div>
+            <div class="project-templates">
+                <div class="template-grid">
+                    <div class="template-card" onclick="createProject('react')">
+                        <i class="fab fa-react"></i>
+                        <h3>React App</h3>
+                        <p>Modern React application with TypeScript</p>
+                    </div>
+                    <div class="template-card" onclick="createProject('node')">
+                        <i class="fab fa-node-js"></i>
+                        <h3>Node.js API</h3>
+                        <p>Express.js REST API with TypeScript</p>
+                    </div>
+                    <div class="template-card" onclick="createProject('python')">
+                        <i class="fab fa-python"></i>
+                        <h3>Python App</h3>
+                        <p>Python application with Flask/FastAPI</p>
+                    </div>
+                    <div class="template-card" onclick="createProject('android')">
+                        <i class="fab fa-android"></i>
+                        <h3>Android App</h3>
+                        <p>Kotlin Android application</p>
+                    </div>
+                    <div class="template-card" onclick="createProject('desktop')">
+                        <i class="fas fa-desktop"></i>
+                        <h3>Desktop App</h3>
+                        <p>Electron or Tauri desktop application</p>
+                    </div>
+                    <div class="template-card" onclick="createProject('game')">
+                        <i class="fas fa-gamepad"></i>
+                        <h3>Game</h3>
+                        <p>JavaScript/TypeScript game</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>AI is working...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://js.puter.com/v2/"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
