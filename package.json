@@ -1,53 +1,61 @@
 {
   "name": "freeai-ide",
   "version": "1.0.0",
-  "description": "A powerful, free IDE that combines Cursor AI features with unlimited AI assistance powered by puter.js",
-  "main": "index.html",
+  "description": "Forever-free AI-powered IDE like Cursor - no API keys, no limits",
+  "main": "server.js",
   "scripts": {
-    "start": "python -m http.server 8000",
-    "serve": "npx http-server -p 8000 -o",
-    "deploy": "gh-pages -d .",
-    "build": "echo 'No build process needed - static files only'",
-    "test": "echo 'No tests specified yet'"
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "node backend/server.js",
+    "client": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@monaco-editor/react": "^4.6.0",
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0",
+    "xterm-addon-web-links": "^0.9.0",
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "socket.io-client": "^4.7.2",
+    "chokidar": "^3.5.3",
+    "fast-glob": "^3.3.1",
+    "execa": "^7.2.0",
+    "fs-extra": "^11.1.1",
+    "cors": "^2.8.5",
+    "mime-types": "^2.1.35",
+    "node-pty": "^0.10.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@vitejs/plugin-react": "^4.0.3",
+    "vite": "^4.4.5",
+    "tailwindcss": "^3.3.3",
+    "autoprefixer": "^10.4.14",
+    "postcss": "^8.4.27",
+    "concurrently": "^8.2.0",
+    "@tauri-apps/cli": "^1.4.0",
+    "@tauri-apps/api": "^1.4.0"
   },
   "keywords": [
     "ide",
     "ai",
-    "coding",
-    "editor",
-    "puter",
     "cursor",
     "free",
-    "unlimited",
-    "gpt",
     "claude",
-    "llama",
-    "javascript",
-    "python",
-    "react",
-    "nodejs",
-    "development"
+    "coding",
+    "editor"
   ],
   "author": "FreeAI IDE Team",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/freeai-ide.git"
-  },
-  "homepage": "https://your-username.github.io/freeai-ide",
-  "bugs": {
-    "url": "https://github.com/your-username/freeai-ide/issues"
-  },
-  "devDependencies": {
-    "gh-pages": "^4.0.0",
-    "http-server": "^14.1.1"
-  },
-  "engines": {
-    "node": ">=14.0.0"
-  },
-  "browserslist": [
-    "defaults",
-    "not ie 11",
-    "not op_mini all"
-  ]
+    "url": "https://github.com/your-username/freeai-ide"
+  }
 }
