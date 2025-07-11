@@ -590,9 +590,23 @@ h1 {
             }
 
             // More detailed error message
-            const errorMsg = error.message || error.toString() || 'Unknown error';
+            let errorMsg = 'Unknown error';
+            try {
+                if (error.message) {
+                    errorMsg = error.message;
+                } else if (typeof error === 'string') {
+                    errorMsg = error;
+                } else if (error.toString && error.toString() !== '[object Object]') {
+                    errorMsg = error.toString();
+                } else {
+                    errorMsg = JSON.stringify(error, null, 2);
+                }
+            } catch (e) {
+                errorMsg = 'Error parsing error message';
+            }
+            
             const statusMsg = error.status ? ` (Status: ${error.status})` : '';
-            throw new Error(`❌ Both ${this.currentModel} and GPT-4o failed. Please try a different model.`);
+            throw new Error(`❌ AI request failed: ${errorMsg}${statusMsg}. Please try switching models or check your connection.`);
         }
     }
 
