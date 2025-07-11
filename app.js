@@ -86,10 +86,31 @@ class FreeAIIDE {
     }
 
     async testPuterConnection() {
-        // Simple test to see if puter is working
-        const response = await puter.ai.chat('Hello', { model: 'gpt-4o' });
-        console.log('Puter connection test successful:', response);
-        return response;
+        try {
+            // Simple test with reliable models
+            const testModels = ['llama-3.1-405b', 'gpt-4o', 'claude-3.5-sonnet'];
+            let testModel = this.currentModel;
+            
+            if (!testModels.includes(testModel)) {
+                testModel = testModels[0];
+            }
+            
+            const response = await puter.ai.chat('Hi', { 
+                model: testModel,
+                max_tokens: 10 
+            });
+            console.log('Puter connection test successful with model:', testModel);
+            return response;
+        } catch (error) {
+            console.warn('Puter connection test failed:', error);
+            
+            // Try to re-initialize puter if connection fails
+            if (error.message?.includes('auth') || error.status === 401) {
+                console.log('Re-initializing Puter due to auth issue...');
+                await this.initializePuter();
+            }
+            throw error;
+        }
     }
 
     initEditor() {
@@ -146,10 +167,10 @@ class FreeAIIDE {
                 'claude-sonnet-4': 'Claude Sonnet 4 🧠',
                 'claude-opus-4': 'Claude Opus 4 🎯', 
                 'gpt-4o': 'GPT-4o ⚡',
-                'claude-3-5-sonnet': 'Claude 3.5 Sonnet 📝',
-                'gpt-4.1': 'GPT-4.1 🚀',
-                'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo': 'Llama 3.1 🦙',
-                'deepseek-chat': 'DeepSeek Chat 🔍'
+                'claude-3.5-sonnet': 'Claude 3.5 Sonnet 📝',
+                'gpt-4.1-turbo': 'GPT-4.1 Turbo 🚀',
+                'llama-3.1-405b': 'Llama 3.1 405B 🦙',
+                'deepseek-coder': 'DeepSeek Coder 🔍'
             };
             const modelName = modelNames[e.target.value] || e.target.value;
             this.addChatMessage('System', `🔄 Switched to ${modelName}`);
@@ -449,36 +470,52 @@ h1 {
         }
     }
 
-    async callAI(prompt, useStream = false, retryCount = 0) {
+    async callAI(prompt, useStream = false, retryCount = 0, modelFallback = false) {
         if (typeof puter === 'undefined') {
             throw new Error('Puter.js not available. Please refresh the page.');
         }
 
+        // Available models to try in order
+        const availableModels = [
+            'claude-sonnet-4',
+            'gpt-4o', 
+            'claude-opus-4',
+            'claude-3.5-sonnet',
+            'gpt-4.1-turbo', 
+            'llama-3.1-405b',
+            'deepseek-coder'
+        ];
+
         try {
             console.log(`Making AI request with model: ${this.currentModel} (attempt ${retryCount + 1})`, { prompt: prompt.substring(0, 100) + '...' });
 
+            // Test connection first
+            if (retryCount === 0) {
+                await this.testPuterConnection();
+            }
+
+            const response = await puter.ai.chat(prompt, {
+                model: this.currentModel,
+                stream: useStream,
+                temperature: 0.7,
+                max_tokens: 4000
+            });
+
             if (useStream) {
-                const response = await puter.ai.chat(prompt, {
-                    model: this.currentModel,
-                    stream: true
-                });
-                
                 let fullResponse = '';
                 for await (const part of response) {
                     if (part?.text) {
                         fullResponse += part.text;
                     } else if (part?.delta?.content) {
                         fullResponse += part.delta.content;
+                    } else if (part?.choices?.[0]?.delta?.content) {
+                        fullResponse += part.choices[0].delta.content;
                     } else if (typeof part === 'string') {
                         fullResponse += part;
                     }
                 }
                 return fullResponse || 'No response received from AI.';
             } else {
-                const response = await puter.ai.chat(prompt, {
-                    model: this.currentModel
-                });
-                
                 console.log('AI Response received:', response);
                 
                 // Handle different response formats from puter.js
@@ -495,19 +532,34 @@ h1 {
                     return response.content;
                 } else if (response.text) {
                     return response.text;
+                } else if (response.response) {
+                    return response.response;
                 }
                 
                 // Fallback: try to extract text from any part of the response
                 const responseStr = JSON.stringify(response);
                 console.warn('Unexpected response format:', response);
-                return `AI responded but format was unexpected. Response: ${responseStr.substring(0, 200)}...`;
+                return `AI responded but format was unexpected. Raw response logged to console.`;
             }
         } catch (error) {
             console.error('AI API Error:', error);
             
+            // Try different model if current one fails
+            if (!modelFallback && availableModels.includes(this.currentModel)) {
+                const currentIndex = availableModels.indexOf(this.currentModel);
+                const nextModel = availableModels[currentIndex + 1];
+                
+                if (nextModel) {
+                    this.addChatMessage('System', `⚠️ ${this.currentModel} may not be available. Trying ${nextModel} instead...`);
+                    this.currentModel = nextModel;
+                    document.getElementById('aiModel').value = nextModel;
+                    return this.callAI(prompt, useStream, 0, true);
+                }
+            }
+            
             // Handle specific puter.js errors
             if (error.message?.includes('auth') || error.message?.includes('sign') || error.message?.includes('login')) {
-                throw new Error('Please sign in to puter.com to use AI features. The sign-in dialog should appear automatically.');
+                throw new Error('Please sign in to puter.com to use AI features. Visit puter.com and sign in first.');
             } else if (error.message?.includes('network') || error.message?.includes('fetch') || error.message?.includes('connection')) {
                 throw new Error('Network error. Please check your internet connection.');
             } else if (error.message?.includes('rate') || error.message?.includes('limit')) {
@@ -517,7 +569,7 @@ h1 {
             } else if (error.message?.includes('timeout')) {
                 throw new Error('Request timeout. The AI model may be busy. Please try again.');
             } else if (error.status === 401 || error.status === 403) {
-                throw new Error('Authentication error. Please sign in to puter.com.');
+                throw new Error('Authentication error. Please sign in to puter.com first.');
             } else if (error.status === 429) {
                 throw new Error('Too many requests. Please wait a moment before trying again.');
             } else if (error.status === 500) {
@@ -532,15 +584,15 @@ h1 {
                 error.status === 502 || 
                 error.status === 503
             )) {
-                console.log(`Retrying AI request in 2 seconds... (attempt ${retryCount + 2})`);
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                return this.callAI(prompt, useStream, retryCount + 1);
+                console.log(`Retrying AI request in 3 seconds... (attempt ${retryCount + 2})`);
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                return this.callAI(prompt, useStream, retryCount + 1, modelFallback);
             }
 
             // More detailed error message
             const errorMsg = error.message || error.toString() || 'Unknown error';
             const statusMsg = error.status ? ` (Status: ${error.status})` : '';
-            throw new Error(`AI request failed: ${errorMsg}${statusMsg}. Try switching AI models or check your connection.`);
+            throw new Error(`❌ Both ${this.currentModel} and GPT-4o failed. Please try a different model.`);
         }
     }
 
@@ -671,6 +723,37 @@ h1 {
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
             .replace(/`([^`]+)`/g, '<code>$1</code>')
             .replace(/\n/g, '<br>');
+    }
+
+    formatMessageWithCodeBlocks(message, codeBlocks) {
+        let formatted = message;
+        
+        // Replace code blocks with styled versions
+        codeBlocks.forEach((block, index) => {
+            const codeBlockRegex = new RegExp(`\`\`\`${block.language}?\\n?[\\s\\S]*?\`\`\``, 'g');
+            formatted = formatted.replace(codeBlockRegex, `
+                <div class="code-block" data-language="${block.language}">
+                    <div class="code-header">
+                        <span class="code-language">${block.language}</span>
+                        <span class="code-lines">${block.code.split('\n').length} lines</span>
+                    </div>
+                    <pre><code class="language-${block.language}">${this.escapeHtml(block.code)}</code></pre>
+                </div>
+            `);
+        });
+        
+        // Apply other markdown formatting
+        return formatted
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
+            .replace(/\n/g, '<br>');
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     // AI Tools - Code Extraction and File Creation
