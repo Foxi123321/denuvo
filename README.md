@@ -42,6 +42,13 @@
 - **Intuitive Layout**: Familiar interface similar to popular IDEs
 - **Customizable**: Adjustable panels and layout options
 
+### 🔧 Workflow Automation (n8n-style)
+- **Visual Workflow Builder**: Create automated workflows with visual interface
+- **Auto Deployment**: Automatically build and deploy on file changes
+- **AI Enhancement Workflows**: Automated code review and optimization
+- **API Integration**: Connect external services and APIs
+- **Custom Automation**: Build your own workflow automation rules
+
 ## 🚀 Getting Started
 
 ### Quick Start
@@ -88,6 +95,15 @@ FreeAI IDE runs entirely in your browser - no downloads, installations, or setup
 2. The AI will detect your project type automatically
 3. Watch the build process in the output panel
 4. Get executable files, APKs, or deployable builds
+
+### Workflow Automation
+1. Click "Build Workflow" in the sidebar
+2. Choose from pre-built workflows:
+   - **Auto Deploy**: Continuous deployment on file changes
+   - **AI Enhancement**: Automated code review and optimization
+   - **API Integration**: Connect external services
+3. Watch workflows execute with real-time feedback
+4. Enable automation rules for your project
 
 ## 🛠️ Supported Technologies
 

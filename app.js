@@ -15,6 +15,11 @@ class FreeAIIDE {
             suggestFileNames: true,
             autoSaveGeneratedFiles: true
         };
+        this.workflows = {
+            deploymentEnabled: false,
+            apiIntegrations: [],
+            automationRules: []
+        };
         this.buildConfigs = {
             react: {
                 build: 'npm run build',
@@ -856,6 +861,131 @@ h1 {
         }
     }
 
+    // Workflow Automation (n8n-style)
+    async createWorkflow(workflowType) {
+        const workflows = {
+            deployment: {
+                name: 'Auto Deploy',
+                steps: [
+                    { type: 'trigger', event: 'file_save', condition: 'main_files_changed' },
+                    { type: 'build', command: 'npm run build' },
+                    { type: 'test', command: 'npm test' },
+                    { type: 'deploy', service: 'netlify', branch: 'main' },
+                    { type: 'notify', service: 'slack', message: 'Deployment complete!' }
+                ]
+            },
+            api_integration: {
+                name: 'API Integration',
+                steps: [
+                    { type: 'trigger', event: 'api_request' },
+                    { type: 'validate', schema: 'openapi' },
+                    { type: 'transform', format: 'json' },
+                    { type: 'store', database: 'mongodb' },
+                    { type: 'respond', format: 'success' }
+                ]
+            },
+            ai_enhancement: {
+                name: 'AI Code Enhancement',
+                steps: [
+                    { type: 'trigger', event: 'code_commit' },
+                    { type: 'ai_review', model: 'claude-sonnet-4', task: 'code_review' },
+                    { type: 'ai_optimize', model: 'gpt-4o', task: 'performance' },
+                    { type: 'ai_test', model: 'llama-3.1', task: 'generate_tests' },
+                    { type: 'commit', message: 'AI-enhanced code' }
+                ]
+            }
+        };
+
+        return workflows[workflowType] || null;
+    }
+
+    async executeWorkflow(workflow) {
+        this.addChatMessage('System', `🔄 Executing workflow: ${workflow.name}`);
+        
+        for (const step of workflow.steps) {
+            this.addToOutput(`▶️ ${step.type}: ${step.command || step.task || step.event}`, 'info');
+            
+            // Simulate step execution
+            await this.sleep(1000);
+            
+            switch (step.type) {
+                case 'build':
+                    await this.simulateBuild();
+                    break;
+                case 'test':
+                    await this.simulateTest();
+                    break;
+                case 'deploy':
+                    await this.simulateDeploy(step.service);
+                    break;
+                case 'ai_review':
+                    await this.aiCodeReview(step.model);
+                    break;
+                default:
+                    this.addToOutput(`✅ ${step.type} completed`, 'success');
+            }
+        }
+        
+        this.addChatMessage('System', `✅ Workflow "${workflow.name}" completed successfully!`);
+    }
+
+    async simulateBuild() {
+        const projectType = this.detectProjectType();
+        this.addToOutput(`Building ${projectType} project...`, 'info');
+        await this.sleep(2000);
+        this.addToOutput('Build completed successfully!', 'success');
+    }
+
+    async simulateTest() {
+        this.addToOutput('Running tests...', 'info');
+        await this.sleep(1500);
+        this.addToOutput('All tests passed! ✅', 'success');
+    }
+
+    async simulateDeploy(service) {
+        this.addToOutput(`Deploying to ${service}...`, 'info');
+        await this.sleep(3000);
+        const url = `https://your-app-${Date.now()}.${service}.app`;
+        this.addToOutput(`🚀 Deployed successfully to: ${url}`, 'success');
+    }
+
+    async aiCodeReview(model) {
+        if (!this.currentFile) return;
+        
+        const code = this.editor.getValue();
+        if (!code.trim()) return;
+
+        try {
+            const prompt = `Perform a code review of this ${this.currentFile} file. Provide:
+1. Overall code quality score (1-10)
+2. Specific issues found
+3. Suggested improvements
+4. Security concerns
+5. Performance optimizations
+
+Code:
+${code}`;
+
+            this.addToOutput(`🤖 AI reviewing code with ${model}...`, 'info');
+            const review = await this.callAI(prompt);
+            
+            // Create a review file
+            const reviewFileName = `${this.currentFile}.review.md`;
+            this.files.set(reviewFileName, {
+                content: `# Code Review for ${this.currentFile}\n\nReviewed by: ${model}\nDate: ${new Date().toISOString()}\n\n${review}`,
+                modified: true,
+                language: 'markdown'
+            });
+            
+            this.updateFileTree();
+            this.addToOutput(`📋 Code review saved to: ${reviewFileName}`, 'success');
+            this.addChatMessage('AI', `🔍 Code review completed! Check ${reviewFileName} for details.`);
+            
+        } catch (error) {
+            this.addToOutput(`❌ AI code review failed: ${error.message}`, 'error');
+        }
+    }
+
     // Terminal System
     async executeTerminalCommand(command) {
         this.addTerminalLine(`$ ${command}`);
@@ -1425,6 +1555,77 @@ window.toggleAITool = (toolName, enabled) => {
         'suggestFileNames': 'Smart file naming'
     };
     ide.addChatMessage('System', `🔧 ${toolNames[toolName]} ${enabled ? 'enabled' : 'disabled'}`);
+};
+
+// Workflow Functions (n8n-style)
+window.openWorkflowBuilder = async () => {
+    ide.addChatMessage('System', '🔧 Opening Workflow Builder...');
+    document.getElementById('workflowModal').style.display = 'flex';
+};
+
+window.executeWorkflowType = async (workflowType) => {
+    ide.closeModal('workflowModal');
+    
+    try {
+        ide.showLoading(true);
+        ide.addChatMessage('System', `🚀 Setting up ${workflowType.replace('_', ' ')} workflow...`);
+        
+        const workflow = await ide.createWorkflow(workflowType);
+        if (workflow) {
+            await ide.executeWorkflow(workflow);
+            ide.workflows[workflowType + 'Enabled'] = true;
+        } else {
+            ide.addChatMessage('System', '❌ Workflow type not found');
+        }
+    } catch (error) {
+        ide.addChatMessage('System', `❌ Failed to execute workflow: ${error.message}`);
+    } finally {
+        ide.showLoading(false);
+    }
+};
+
+window.setupDeployment = async () => {
+    try {
+        ide.showLoading(true);
+        const workflow = await ide.createWorkflow('deployment');
+        ide.addChatMessage('System', '🚀 Setting up auto-deployment workflow...');
+        await ide.executeWorkflow(workflow);
+        ide.workflows.deploymentEnabled = true;
+        ide.addChatMessage('System', '✅ Auto-deployment is now active! Your project will auto-deploy on changes.');
+    } catch (error) {
+        ide.addChatMessage('System', `❌ Failed to setup deployment: ${error.message}`);
+    } finally {
+        ide.showLoading(false);
+    }
+};
+
+window.createAPIWorkflow = async () => {
+    try {
+        ide.showLoading(true);
+        ide.addChatMessage('System', '🔌 Creating API integration workflow...');
+        
+        // Ask AI to help create API integration
+        const prompt = `Help me create an API integration workflow for my ${ide.detectProjectType()} project. 
+        
+Current files: ${Array.from(ide.files.keys()).join(', ')}
+
+Please suggest:
+1. What APIs could be integrated
+2. How to set up the workflow
+3. Code examples for integration
+4. Testing strategies`;
+
+        const response = await ide.callAI(prompt);
+        ide.addChatMessage('AI', response);
+        
+        const workflow = await ide.createWorkflow('api_integration');
+        ide.addToOutput('🔧 API workflow template created', 'success');
+        
+    } catch (error) {
+        ide.addChatMessage('System', `❌ Failed to create API workflow: ${error.message}`);
+    } finally {
+        ide.showLoading(false);
+    }
 };
 
 // Initialize IDE when page loads

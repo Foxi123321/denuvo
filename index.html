@@ -75,6 +75,20 @@
                     <span>Smart file naming</span>
                 </label>
             </div>
+
+            <!-- Workflow Automation -->
+            <div class="workflow-section">
+                <h4><i class="fas fa-project-diagram"></i> Workflows</h4>
+                <button class="ai-action-btn" onclick="openWorkflowBuilder()">
+                    <i class="fas fa-magic"></i> Build Workflow
+                </button>
+                <button class="ai-action-btn" onclick="setupDeployment()">
+                    <i class="fas fa-rocket"></i> Auto Deploy
+                </button>
+                <button class="ai-action-btn" onclick="createAPIWorkflow()">
+                    <i class="fas fa-plug"></i> API Integration
+                </button>
+            </div>
         </div>
 
         <!-- Editor Area -->
@@ -209,6 +223,53 @@
                         <i class="fas fa-gamepad"></i>
                         <h3>Game</h3>
                         <p>JavaScript/TypeScript game</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Builder Modal -->
+    <div class="modal" id="workflowModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔧 Workflow Builder (n8n-style)</h2>
+                <button onclick="closeModal('workflowModal')">&times;</button>
+            </div>
+            <div class="workflow-builder">
+                <div class="workflow-grid">
+                    <div class="workflow-card" onclick="executeWorkflowType('deployment')">
+                        <i class="fas fa-rocket"></i>
+                        <h3>Auto Deployment</h3>
+                        <p>Automatically build and deploy on file changes</p>
+                        <div class="workflow-steps">
+                            <span class="step">Trigger</span> → 
+                            <span class="step">Build</span> → 
+                            <span class="step">Test</span> → 
+                            <span class="step">Deploy</span>
+                        </div>
+                    </div>
+                    <div class="workflow-card" onclick="executeWorkflowType('ai_enhancement')">
+                        <i class="fas fa-brain"></i>
+                        <h3>AI Enhancement</h3>
+                        <p>AI-powered code review and optimization</p>
+                        <div class="workflow-steps">
+                            <span class="step">Review</span> → 
+                            <span class="step">Optimize</span> → 
+                            <span class="step">Test</span> → 
+                            <span class="step">Commit</span>
+                        </div>
+                    </div>
+                    <div class="workflow-card" onclick="executeWorkflowType('api_integration')">
+                        <i class="fas fa-plug"></i>
+                        <h3>API Integration</h3>
+                        <p>Connect external APIs and services</p>
+                        <div class="workflow-steps">
+                            <span class="step">Validate</span> → 
+                            <span class="step">Transform</span> → 
+                            <span class="step">Store</span> → 
+                            <span class="step">Respond</span>
+                        </div>
                     </div>
                 </div>
             </div>
