@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrazyIDE - Ultimate Development Environment</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Top Menu Bar -->
+        <div class="menu-bar">
+            <div class="menu-left">
+                <div class="logo">
+                    <i class="fas fa-code"></i>
+                    <span>CrazyIDE</span>
+                </div>
+                <div class="menu-items">
+                    <div class="menu-item" data-menu="file">
+                        <span>File</span>
+                        <div class="dropdown">
+                            <div class="dropdown-item" data-action="new-file">
+                                <i class="fas fa-file"></i> New File <span class="shortcut">Ctrl+N</span>
+                            </div>
+                            <div class="dropdown-item" data-action="new-folder">
+                                <i class="fas fa-folder"></i> New Folder
+                            </div>
+                            <div class="dropdown-item" data-action="open-file">
+                                <i class="fas fa-folder-open"></i> Open File <span class="shortcut">Ctrl+O</span>
+                            </div>
+                            <div class="dropdown-item" data-action="save">
+                                <i class="fas fa-save"></i> Save <span class="shortcut">Ctrl+S</span>
+                            </div>
+                            <div class="dropdown-item" data-action="save-as">
+                                <i class="fas fa-save"></i> Save As <span class="shortcut">Ctrl+Shift+S</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="menu-item" data-menu="edit">
+                        <span>Edit</span>
+                        <div class="dropdown">
+                            <div class="dropdown-item" data-action="undo">
+                                <i class="fas fa-undo"></i> Undo <span class="shortcut">Ctrl+Z</span>
+                            </div>
+                            <div class="dropdown-item" data-action="redo">
+                                <i class="fas fa-redo"></i> Redo <span class="shortcut">Ctrl+Y</span>
+                            </div>
+                            <div class="dropdown-item" data-action="find">
+                                <i class="fas fa-search"></i> Find <span class="shortcut">Ctrl+F</span>
+                            </div>
+                            <div class="dropdown-item" data-action="replace">
+                                <i class="fas fa-exchange-alt"></i> Replace <span class="shortcut">Ctrl+H</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="menu-item" data-menu="view">
+                        <span>View</span>
+                        <div class="dropdown">
+                            <div class="dropdown-item" data-action="toggle-sidebar">
+                                <i class="fas fa-bars"></i> Toggle Sidebar
+                            </div>
+                            <div class="dropdown-item" data-action="toggle-terminal">
+                                <i class="fas fa-terminal"></i> Toggle Terminal
+                            </div>
+                            <div class="dropdown-item" data-action="toggle-minimap">
+                                <i class="fas fa-map"></i> Toggle Minimap
+                            </div>
+                        </div>
+                    </div>
+                    <div class="menu-item" data-menu="run">
+                        <span>Run</span>
+                        <div class="dropdown">
+                            <div class="dropdown-item" data-action="run-file">
+                                <i class="fas fa-play"></i> Run File <span class="shortcut">F5</span>
+                            </div>
+                            <div class="dropdown-item" data-action="debug">
+                                <i class="fas fa-bug"></i> Debug <span class="shortcut">F9</span>
+                            </div>
+                            <div class="dropdown-item" data-action="build">
+                                <i class="fas fa-hammer"></i> Build <span class="shortcut">Ctrl+Shift+B</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu-right">
+                <div class="status-items">
+                    <div class="status-item git-status">
+                        <i class="fab fa-git-alt"></i>
+                        <span id="git-branch">main</span>
+                    </div>
+                    <div class="status-item ai-status">
+                        <i class="fas fa-robot"></i>
+                        <span>AI Ready</span>
+                    </div>
+                    <div class="status-item theme-toggle" id="theme-toggle">
+                        <i class="fas fa-moon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Layout -->
+        <div class="main-layout">
+            <!-- Sidebar -->
+            <div class="sidebar" id="sidebar">
+                <div class="sidebar-tabs">
+                    <div class="sidebar-tab active" data-panel="explorer">
+                        <i class="fas fa-folder-tree"></i>
+                        <span>Explorer</span>
+                    </div>
+                    <div class="sidebar-tab" data-panel="search">
+                        <i class="fas fa-search"></i>
+                        <span>Search</span>
+                    </div>
+                    <div class="sidebar-tab" data-panel="git">
+                        <i class="fab fa-git-alt"></i>
+                        <span>Git</span>
+                    </div>
+                    <div class="sidebar-tab" data-panel="extensions">
+                        <i class="fas fa-puzzle-piece"></i>
+                        <span>Extensions</span>
+                    </div>
+                </div>
+
+                <div class="sidebar-content">
+                    <!-- File Explorer Panel -->
+                    <div class="sidebar-panel active" id="explorer-panel">
+                        <div class="panel-header">
+                            <h3>Explorer</h3>
+                            <div class="panel-actions">
+                                <button class="btn-icon" data-action="new-file" title="New File">
+                                    <i class="fas fa-file-plus"></i>
+                                </button>
+                                <button class="btn-icon" data-action="new-folder" title="New Folder">
+                                    <i class="fas fa-folder-plus"></i>
+                                </button>
+                                <button class="btn-icon" data-action="refresh" title="Refresh">
+                                    <i class="fas fa-sync"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="file-tree" id="file-tree">
+                            <!-- File tree will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Search Panel -->
+                    <div class="sidebar-panel" id="search-panel">
+                        <div class="panel-header">
+                            <h3>Search</h3>
+                        </div>
+                        <div class="search-controls">
+                            <input type="text" class="search-input" placeholder="Search files..." id="search-input">
+                            <input type="text" class="search-input" placeholder="Replace..." id="replace-input">
+                            <div class="search-options">
+                                <label><input type="checkbox" id="case-sensitive"> Case sensitive</label>
+                                <label><input type="checkbox" id="whole-word"> Whole word</label>
+                                <label><input type="checkbox" id="regex"> Regex</label>
+                            </div>
+                            <button class="btn-primary" id="search-btn">Search All</button>
+                        </div>
+                        <div class="search-results" id="search-results">
+                            <!-- Search results will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Git Panel -->
+                    <div class="sidebar-panel" id="git-panel">
+                        <div class="panel-header">
+                            <h3>Source Control</h3>
+                            <div class="panel-actions">
+                                <button class="btn-icon" data-action="git-commit" title="Commit">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button class="btn-icon" data-action="git-push" title="Push">
+                                    <i class="fas fa-arrow-up"></i>
+                                </button>
+                                <button class="btn-icon" data-action="git-pull" title="Pull">
+                                    <i class="fas fa-arrow-down"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="git-controls">
+                            <input type="text" class="commit-message" placeholder="Commit message..." id="commit-message">
+                            <button class="btn-primary" id="commit-btn">Commit</button>
+                        </div>
+                        <div class="git-changes" id="git-changes">
+                            <!-- Git changes will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Extensions Panel -->
+                    <div class="sidebar-panel" id="extensions-panel">
+                        <div class="panel-header">
+                            <h3>Extensions</h3>
+                        </div>
+                        <div class="extensions-search">
+                            <input type="text" class="search-input" placeholder="Search extensions..." id="extensions-search">
+                        </div>
+                        <div class="extensions-list" id="extensions-list">
+                            <!-- Extensions will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Editor Area -->
+            <div class="editor-area">
+                <!-- Tab Bar -->
+                <div class="tab-bar" id="tab-bar">
+                    <div class="tabs" id="tabs">
+                        <!-- Tabs will be populated by JavaScript -->
+                    </div>
+                    <div class="tab-actions">
+                        <button class="btn-icon" data-action="split-horizontal" title="Split Horizontally">
+                            <i class="fas fa-columns"></i>
+                        </button>
+                        <button class="btn-icon" data-action="split-vertical" title="Split Vertically">
+                            <i class="fas fa-grip-lines"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Editor Container -->
+                <div class="editor-container" id="editor-container">
+                    <div class="welcome-screen" id="welcome-screen">
+                        <div class="welcome-content">
+                            <div class="welcome-logo">
+                                <i class="fas fa-code"></i>
+                                <h1>CrazyIDE</h1>
+                                <p>The Ultimate Development Environment</p>
+                            </div>
+                            <div class="welcome-actions">
+                                <div class="action-group">
+                                    <h3>Start</h3>
+                                    <button class="welcome-btn" data-action="new-file">
+                                        <i class="fas fa-file"></i> New File
+                                    </button>
+                                    <button class="welcome-btn" data-action="open-folder">
+                                        <i class="fas fa-folder-open"></i> Open Folder
+                                    </button>
+                                    <button class="welcome-btn" data-action="clone-repo">
+                                        <i class="fab fa-git-alt"></i> Clone Repository
+                                    </button>
+                                </div>
+                                <div class="action-group">
+                                    <h3>Recent</h3>
+                                    <div class="recent-files" id="recent-files">
+                                        <!-- Recent files will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Minimap -->
+                <div class="minimap" id="minimap">
+                    <!-- Minimap will be rendered here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Panel -->
+        <div class="bottom-panel" id="bottom-panel">
+            <div class="bottom-tabs">
+                <div class="bottom-tab active" data-panel="terminal">
+                    <i class="fas fa-terminal"></i>
+                    <span>Terminal</span>
+                </div>
+                <div class="bottom-tab" data-panel="output">
+                    <i class="fas fa-list"></i>
+                    <span>Output</span>
+                </div>
+                <div class="bottom-tab" data-panel="problems">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Problems</span>
+                    <span class="badge" id="problems-count">0</span>
+                </div>
+                <div class="bottom-tab" data-panel="debug">
+                    <i class="fas fa-bug"></i>
+                    <span>Debug Console</span>
+                </div>
+            </div>
+            <div class="bottom-content">
+                <!-- Terminal Panel -->
+                <div class="bottom-panel-content active" id="terminal-panel">
+                    <div class="terminal" id="terminal">
+                        <!-- Terminal will be initialized here -->
+                    </div>
+                </div>
+                <!-- Other panels will be added here -->
+            </div>
+        </div>
+
+        <!-- Context Menu -->
+        <div class="context-menu" id="context-menu">
+            <!-- Context menu items will be populated by JavaScript -->
+        </div>
+
+        <!-- Modal Dialogs -->
+        <div class="modal-overlay" id="modal-overlay">
+            <div class="modal" id="modal">
+                <!-- Modal content will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Command Palette -->
+        <div class="command-palette" id="command-palette">
+            <input type="text" class="command-input" placeholder="Type a command..." id="command-input">
+            <div class="command-results" id="command-results">
+                <!-- Command results will be populated here -->
+            </div>
+        </div>
+
+        <!-- Notification Toast -->
+        <div class="notifications" id="notifications">
+            <!-- Notifications will be added here -->
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/editor.js"></script>
+    <script src="js/file-system.js"></script>
+    <script src="js/terminal.js"></script>
+    <script src="js/git.js"></script>
+    <script src="js/themes.js"></script>
+    <script src="js/extensions.js"></script>
+    <script src="js/ai-assistant.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
