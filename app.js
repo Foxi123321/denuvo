@@ -39,14 +39,44 @@ class FreeAIIDE {
         this.setupEventListeners();
         this.loadSampleProject();
         
-        // Wait for puter to be ready
-        if (typeof puter !== 'undefined') {
+        // Initialize puter.js properly
+        await this.initializePuter();
+    }
+
+    async initializePuter() {
+        try {
+            // Wait for puter to be available
+            if (typeof puter === 'undefined') {
+                console.error('Puter.js not loaded');
+                this.addChatMessage('System', 'Warning: AI features may not work properly. Please refresh the page.');
+                return;
+            }
+
+            // Check if user is signed in, if not, they'll be prompted when making first AI request
             console.log('Puter.js loaded successfully!');
-            this.addChatMessage('AI', 'Puter.js loaded! I can now help you with AI-powered coding assistance.');
-        } else {
-            console.error('Puter.js not loaded');
-            this.addChatMessage('System', 'Warning: AI features may not work properly. Please refresh the page.');
+            this.addChatMessage('AI', 'Welcome to FreeAI IDE! 🚀 I\'m your AI coding assistant powered by puter.js.');
+            this.addChatMessage('AI', '✨ <strong>How it works:</strong><br>• No API keys needed!<br>• When you first use AI features, you\'ll be prompted to sign in to puter.com<br>• After that, enjoy unlimited free AI assistance!<br>• Try asking me anything or press Ctrl+K for inline help');
+            
+            // Test connection with a simple ping (but don't show errors to user)
+            try {
+                await this.testPuterConnection();
+                this.addChatMessage('AI', '✅ AI connection test successful! I\'m ready to help with your coding.');
+            } catch (error) {
+                console.log('Puter test connection failed, but this is normal before first use:', error);
+                // Don't show error to user, it's expected before sign-in
+            }
+            
+        } catch (error) {
+            console.error('Puter initialization error:', error);
+            this.addChatMessage('System', 'AI initialization failed. Please refresh the page.');
         }
+    }
+
+    async testPuterConnection() {
+        // Simple test to see if puter is working
+        const response = await puter.ai.chat('Hello', { model: 'gpt-4o' });
+        console.log('Puter connection test successful:', response);
+        return response;
     }
 
     initEditor() {
@@ -398,10 +428,12 @@ h1 {
 
     async callAI(prompt, useStream = false) {
         if (typeof puter === 'undefined') {
-            throw new Error('Puter.js not available');
+            throw new Error('Puter.js not available. Please refresh the page.');
         }
 
         try {
+            console.log(`Making AI request with model: ${this.currentModel}`, { prompt: prompt.substring(0, 100) + '...' });
+
             if (useStream) {
                 const response = await puter.ai.chat(prompt, {
                     model: this.currentModel,
@@ -412,31 +444,54 @@ h1 {
                 for await (const part of response) {
                     if (part?.text) {
                         fullResponse += part.text;
+                    } else if (part?.delta?.content) {
+                        fullResponse += part.delta.content;
+                    } else if (typeof part === 'string') {
+                        fullResponse += part;
                     }
                 }
-                return fullResponse;
+                return fullResponse || 'No response received from AI.';
             } else {
                 const response = await puter.ai.chat(prompt, {
                     model: this.currentModel
                 });
                 
-                // Handle different response formats
+                console.log('AI Response received:', response);
+                
+                // Handle different response formats from puter.js
                 if (typeof response === 'string') {
                     return response;
                 } else if (response.message?.content) {
                     if (Array.isArray(response.message.content)) {
-                        return response.message.content[0].text || response.message.content[0];
+                        return response.message.content[0]?.text || response.message.content[0];
                     }
                     return response.message.content;
                 } else if (response.choices?.[0]?.message?.content) {
                     return response.choices[0].message.content;
+                } else if (response.content) {
+                    return response.content;
+                } else if (response.text) {
+                    return response.text;
                 }
                 
-                return 'AI response received but format is unclear.';
+                // Fallback: try to extract text from any part of the response
+                const responseStr = JSON.stringify(response);
+                console.warn('Unexpected response format:', response);
+                return `AI responded but format was unexpected. Response: ${responseStr.substring(0, 200)}...`;
             }
         } catch (error) {
             console.error('AI API Error:', error);
-            throw error;
+            
+            // Handle specific puter.js errors
+            if (error.message?.includes('auth') || error.message?.includes('sign')) {
+                throw new Error('Please sign in to puter.com to use AI features. The sign-in dialog should appear automatically.');
+            } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+                throw new Error('Network error. Please check your internet connection.');
+            } else if (error.message?.includes('rate') || error.message?.includes('limit')) {
+                throw new Error('Rate limit reached. Please wait a moment and try again.');
+            }
+            
+            throw new Error(`AI request failed: ${error.message || 'Unknown error'}`);
         }
     }
 
@@ -460,8 +515,16 @@ h1 {
             const response = await this.callAI(contextualPrompt, true);
             this.addChatMessage('AI', response);
         } catch (error) {
-            this.addChatMessage('System', 'Failed to get AI response. Please try again.');
             console.error('Chat AI Error:', error);
+            
+            // Show user-friendly error message
+            if (error.message.includes('sign in') || error.message.includes('auth')) {
+                this.addChatMessage('System', '🔐 Please sign in to puter.com to use AI features. A sign-in dialog should appear automatically when you make your first AI request.');
+            } else if (error.message.includes('network')) {
+                this.addChatMessage('System', '🌐 Network error. Please check your internet connection and try again.');
+            } else {
+                this.addChatMessage('System', `❌ AI request failed: ${error.message}. Please try again.`);
+            }
         } finally {
             this.showLoading(false);
         }
@@ -1017,6 +1080,26 @@ window.handleTerminalKeyPress = (event) => {
     if (event.key === 'Enter') {
         ide.executeTerminalCommand(event.target.value);
         event.target.value = '';
+    }
+};
+
+window.testAIConnection = async () => {
+    try {
+        ide.showLoading(true);
+        ide.addChatMessage('System', '🔌 Testing AI connection...');
+        
+        const response = await ide.callAI('Hello! Please respond with "AI connection successful!"');
+        ide.addChatMessage('AI', response);
+        ide.addChatMessage('System', '✅ AI connection test completed successfully!');
+    } catch (error) {
+        console.error('AI connection test failed:', error);
+        if (error.message.includes('sign in') || error.message.includes('auth')) {
+            ide.addChatMessage('System', '🔐 Please sign in to puter.com to use AI features. The sign-in dialog should appear automatically.');
+        } else {
+            ide.addChatMessage('System', `❌ AI connection test failed: ${error.message}`);
+        }
+    } finally {
+        ide.showLoading(false);
     }
 };
 
