@@ -1101,6 +1101,321 @@ select:focus {
     outline-offset: 2px;
 }
 
+/* AI Chat Styles */
+.ai-chat {
+    height: 300px;
+    overflow-y: auto;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    margin-bottom: 12px;
+    background: var(--editor-bg);
+}
+
+.chat-message {
+    margin-bottom: 12px;
+    padding: 8px;
+    border-radius: 6px;
+}
+
+.chat-message.user {
+    background: var(--accent-color);
+    color: white;
+    margin-left: 20px;
+}
+
+.chat-message.assistant {
+    background: var(--secondary-bg);
+    margin-right: 20px;
+}
+
+.message-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    margin-bottom: 4px;
+    opacity: 0.7;
+}
+
+.message-content {
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.message-content code {
+    background: var(--tertiary-bg);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: var(--font-mono);
+}
+
+.message-content pre {
+    background: var(--tertiary-bg);
+    padding: 8px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 8px 0;
+}
+
+.ai-input-container {
+    display: flex;
+    gap: 8px;
+}
+
+.ai-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--primary-bg);
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.ai-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+.typing-dots {
+    display: flex;
+    gap: 4px;
+    padding: 8px 0;
+}
+
+.typing-dots span {
+    width: 6px;
+    height: 6px;
+    background: var(--text-secondary);
+    border-radius: 50%;
+    animation: typing 1.4s infinite;
+}
+
+.typing-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.3;
+    }
+    30% {
+        transform: translateY(-10px);
+        opacity: 1;
+    }
+}
+
+/* Extension Styles */
+.extension-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    background: var(--primary-bg);
+    transition: var(--transition-fast);
+}
+
+.extension-item:hover {
+    background: var(--secondary-bg);
+}
+
+.extension-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.extension-info i {
+    font-size: 20px;
+    color: var(--accent-color);
+}
+
+.extension-name {
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.extension-description {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.extension-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.extension-actions .btn-icon.active {
+    background: var(--success-color);
+    color: white;
+}
+
+/* Git Panel Styles */
+.git-branch-info {
+    padding: 8px;
+    background: var(--secondary-bg);
+    border-radius: 4px;
+    margin-bottom: 12px;
+}
+
+.current-branch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.ahead {
+    background: var(--success-color);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+}
+
+.behind {
+    background: var(--warning-color);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+}
+
+.change-section {
+    margin-bottom: 12px;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.collapse-icon {
+    transition: var(--transition-fast);
+}
+
+.file-list {
+    margin-left: 16px;
+}
+
+.file-change {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-bottom: 2px;
+    transition: var(--transition-fast);
+}
+
+.file-change:hover {
+    background: var(--tertiary-bg);
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.file-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: var(--transition-fast);
+}
+
+.file-change:hover .file-actions {
+    opacity: 1;
+}
+
+.no-changes {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+/* File Tree Enhancements */
+.file-item.modified::after {
+    content: "M";
+    color: var(--warning-color);
+    font-size: 10px;
+    margin-left: 4px;
+}
+
+.file-item.untracked::after {
+    content: "U";
+    color: var(--info-color);
+    font-size: 10px;
+    margin-left: 4px;
+}
+
+/* Command Palette Enhancements */
+.command-result.featured {
+    border-left: 3px solid var(--accent-color);
+}
+
+/* Commit Message Input */
+.commit-message {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--primary-bg);
+    color: var(--text-primary);
+    font-size: 13px;
+    margin-bottom: 8px;
+    resize: vertical;
+    min-height: 60px;
+}
+
+/* Additional Button Styles */
+.btn-secondary {
+    padding: 8px 16px;
+    background: var(--secondary-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: var(--transition-fast);
+}
+
+.btn-secondary:hover {
+    background: var(--tertiary-bg);
+}
+
+/* Enhanced Editor Styles */
+.editor-instance {
+    height: 100%;
+    background: var(--editor-bg);
+}
+
+.tab.modified .tab-name::after {
+    content: "●";
+    color: var(--warning-color);
+    margin-left: 4px;
+}
+
 /* Print Styles */
 @media print {
     .sidebar,
